@@ -1,4 +1,4 @@
-const API_URL = 'http://localhost:5000/api/users';
+const API_URL = 'https://ai-powered-pos-system-back-end.onrender.com/api/users';
 
 export async function getUsers() {
   const res = await fetch(API_URL);

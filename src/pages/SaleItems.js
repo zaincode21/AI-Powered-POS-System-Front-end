@@ -85,7 +85,7 @@ function SaleItems() {
   // Fetch all sales (Read)
   const fetchSales = async () => {
     try {
-      const res = await fetch('http://localhost:5000/api/sales');
+      const res = await fetch('https://ai-powered-pos-system-back-end.onrender.com/api/sales');
       if (!res.ok) throw new Error('Failed to fetch sales');
       const data = await res.json();
       setSales(data);
@@ -215,7 +215,7 @@ function SaleItems() {
     if (!window.confirm('Are you sure you want to delete this sale?')) return;
       setLoading(true);
       try {
-      const res = await fetch(`http://localhost:5000/api/sales/${id}`, { method: 'DELETE' });
+      const res = await fetch(`https://ai-powered-pos-system-back-end.onrender.com/api/sales/${id}`, { method: 'DELETE' });
       if (!res.ok) throw new Error('Failed to delete sale');
       setMessage('Sale deleted successfully!');
         setMessageType('success');
@@ -290,13 +290,13 @@ function SaleItems() {
     try {
       let response;
       if (editingSaleId) {
-        response = await fetch(`http://localhost:5000/api/sales/${editingSaleId}`, {
+        response = await fetch(`https://ai-powered-pos-system-back-end.onrender.com/api/sales/${editingSaleId}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(saleData),
         });
       } else {
-        response = await fetch('http://localhost:5000/api/sales', {
+        response = await fetch('https://ai-powered-pos-system-back-end.onrender.com/api/sales', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(saleData),
@@ -332,7 +332,7 @@ function SaleItems() {
   // Fetch and show receipt for any sale
   const handleViewReceipt = async (saleId) => {
     try {
-      const res = await fetch(`http://localhost:5000/api/sales/with-items/${saleId}`);
+      const res = await fetch(`https://ai-powered-pos-system-back-end.onrender.com/api/sales/with-items/${saleId}`);
       if (!res.ok) throw new Error('Failed to fetch sale receipt');
       const data = await res.json();
       setReceiptData(data);
