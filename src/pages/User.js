@@ -17,7 +17,9 @@ function User() {
     role: 'cashier',
     is_active: true
   });
-  // const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(false);
+  console.log(loading)
+
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const [messageType, setMessageType] = useState(''); // 'success' or 'error'

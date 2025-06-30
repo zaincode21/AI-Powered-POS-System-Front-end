@@ -37,7 +37,9 @@ function SaleItems() {
 
   const [message, setMessage] = useState('');
   const [messageType, setMessageType] = useState(''); // 'success' or 'error'
-  // const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(false);
+  console.log(loading)
+
   const [products, setProducts] = useState([]);
   const [users, setUsers] = useState([]);
   const [stores, setStores] = useState([]);

@@ -17,8 +17,8 @@ function Categories() {
   });
   const [message, setMessage] = useState('');
   const [messageType, setMessageType] = useState(''); // 'success' or 'error'
-  // const [loading, setLoading] = useState(false);
-
+  const [loading, setLoading] = useState(false);
+  console.log(loading)
   useEffect(() => {
     fetchCategories();
   }, []);
