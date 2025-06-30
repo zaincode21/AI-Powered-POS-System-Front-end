@@ -21,7 +21,7 @@ function Store() {
   });
   const [message, setMessage] = useState('');
   const [messageType, setMessageType] = useState(''); // 'success' or 'error'
-  const [loading, setLoading] = useState(false);
+  // const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
 
   // Example AI reorder alerts data

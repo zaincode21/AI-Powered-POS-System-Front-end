@@ -28,7 +28,7 @@ function Product() {
   });
   const [message, setMessage] = useState('');
   const [messageType, setMessageType] = useState(''); // 'success' or 'error'
-  const [loading, setLoading] = useState(false);
+  // const [loading, setLoading] = useState(false);
   const [lastCreatedProduct, setLastCreatedProduct] = useState(null);
   const [showQrModal, setShowQrModal] = useState(false);
   const qrPrintRef = useRef();
