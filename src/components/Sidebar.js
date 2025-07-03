@@ -41,6 +41,13 @@ function Sidebar({ open, onClose }) {
     }
   };
 
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    navigate('/login');
+    if (open) onClose();
+  };
+
   const renderNavItem = (item) => {
     const isDropdownOpen = openDropdown === item.label;
     const isActive = location.pathname === item.path;
@@ -116,6 +123,13 @@ function Sidebar({ open, onClose }) {
             {navItems.map(renderNavItem)}
           </ul>
         </nav>
+        <button
+          onClick={handleLogout}
+          className="mt-8 w-full flex items-center gap-3 px-3 py-2 rounded-lg font-medium text-red-600 bg-red-50 hover:bg-red-100 transition"
+        >
+          <span className="text-lg">🚪</span>
+          <span>Logout</span>
+        </button>
       </div>
       {/* Desktop sidebar */}
       <aside className="hidden md:flex w-56 bg-white shadow-lg flex-col py-8 px-4 min-h-screen">
@@ -125,6 +139,16 @@ function Sidebar({ open, onClose }) {
             {navItems.map(renderNavItem)}
           </ul>
         </nav>
+        <div className="flex justify-end items-end mt-auto">
+          <button
+            onClick={handleLogout}
+            className="mb-2 w-11/12 flex items-center gap-3 px-3 py-2 rounded-lg font-medium text-red-600 bg-red-50 hover:bg-red-100 transition justify-end"
+            style={{ alignSelf: 'flex-end' }}
+          >
+            <span className="text-lg">🚪</span>
+            <span>Logout</span>
+          </button>
+        </div>
       </aside>
     </>
   );

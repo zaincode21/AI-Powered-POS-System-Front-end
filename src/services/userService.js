@@ -1,4 +1,8 @@
-const API_URL = 'https://ai-powered-pos-system-back-end.onrender.com/api/users';
+// const API_URL = 'https://ai-powered-pos-system-back-end.onrender.com/api/users';
+
+const API_URL = 'http://192.168.1.77:5000/api/users';
+const AUTH_URL = 'http://192.168.1.77:5000/api/auth';
+
 
 export async function getUsers() {
   const res = await fetch(API_URL);
@@ -37,5 +41,22 @@ export async function deleteUser(id) {
     method: 'DELETE',
   });
   if (!res.ok) throw new Error('Failed to delete user');
+  return res.json();
+}
+
+export async function loginUser({ email, password, role }) {
+  const res = await fetch(`${AUTH_URL}/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password, role }),
+  });
+  if (!res.ok) {
+    let errorMsg = 'Login failed';
+    try {
+      const err = await res.json();
+      if (err && err.error) errorMsg = err.error;
+    } catch {}
+    throw new Error(errorMsg);
+  }
   return res.json();
 } 

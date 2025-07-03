@@ -1,4 +1,6 @@
-const API_URL = 'https://ai-powered-pos-system-back-end.onrender.com/api/products';
+// const API_URL = 'https://ai-powered-pos-system-back-end.onrender.com/api/products';
+
+const API_URL = 'http://192.168.1.77:5000/api/products';
 
 export async function getProducts() {
   const res = await fetch(API_URL);
@@ -37,5 +39,11 @@ export async function deleteProduct(id) {
     method: 'DELETE',
   });
   if (!res.ok) throw new Error(JSON.stringify(await res.json()));
+  return res.json();
+}
+
+export async function getPriceHistory(productId) {
+  const res = await fetch(`${API_URL}/${productId}/price-history`);
+  if (!res.ok) throw new Error('Failed to fetch price history');
   return res.json();
 } 

@@ -5,11 +5,20 @@ import { getStores } from '../services/storeService';
 import { getCustomers } from '../services/customerService';
 import { useLocation } from 'react-router-dom';
 
+// Get logged-in user from localStorage
+const loggedInUser = (() => {
+  try {
+    return JSON.parse(localStorage.getItem('user'));
+  } catch {
+    return null;
+  }
+})();
+
 function SaleItems() {
   // Master (sale) state
   const [sale, setSale] = useState({
     customer_id: '',
-    user_id: '',
+    user_id: loggedInUser ? loggedInUser.id : '',
     store_id: '',
     subtotal: 0,
     tax_amount: 0,
@@ -50,6 +59,9 @@ function SaleItems() {
 
   const location = useLocation();
 
+  // State to hold product info from QR/URL
+  const [scannedProduct, setScannedProduct] = useState(null);
+
   // Place these calculations before the return statement
   const computedSubtotal = receiptData && receiptData.items
     ? receiptData.items.reduce((sum, item) => sum + (item.quantity * item.unit_price), 0)
@@ -72,15 +84,27 @@ function SaleItems() {
     if (productParam) {
       try {
         const product = JSON.parse(decodeURIComponent(productParam));
-        setItemForm(itemForm => ({
-          ...itemForm,
-          product_id: product.id,
-          product_name: product.name,
-          unit_price: product.selling_price || product.cost_price || 0,
-        }));
+        // Check for required fields
+        if (product.id && product.name && (product.selling_price || product.cost_price)) {
+          setItemForm(itemForm => ({
+            ...itemForm,
+            product_id: product.id,
+            product_name: product.name,
+            unit_price: product.selling_price || product.cost_price || 0,
+          }));
+          setScannedProduct({
+            id: product.id,
+            name: product.name,
+            selling_price: product.selling_price || product.cost_price || 0,
+          });
+        } else {
+          setScannedProduct({ error: 'Product info is incomplete in the QR/URL.' });
+        }
       } catch (e) {
-        // Invalid QR or param
+        setScannedProduct({ error: 'Invalid product QR/URL.' });
       }
+    } else {
+      setScannedProduct(null);
     }
   }, [location.search]);
 
@@ -177,7 +201,7 @@ function SaleItems() {
     setEditingSaleId(null);
     setSale({
       customer_id: '',
-      user_id: '',
+      user_id: loggedInUser ? loggedInUser.id : '',
       store_id: '',
       subtotal: 0,
       tax_amount: 0,
@@ -265,7 +289,7 @@ function SaleItems() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     // Validate required fields
-    if (!sale.customer_id || !sale.user_id || !sale.store_id) {
+    if (!sale.customer_id || !sale.store_id) {
       setMessage('Please fill all required sale fields.');
       setMessageType('error');
       return;
@@ -275,6 +299,14 @@ function SaleItems() {
       setMessageType('error');
       return;
     }
+    // Always set user_id to logged-in user
+    const userId = loggedInUser ? loggedInUser.id : '';
+    if (!userId) {
+      setMessage('No logged-in user found. Please log in again.');
+      setMessageType('error');
+      return;
+    }
+    sale.user_id = userId;
     setLoading(true);
     // Calculate totals
     const subtotal = items.reduce((sum, item) => sum + item.quantity * item.unit_price, 0);
@@ -346,6 +378,15 @@ function SaleItems() {
 
   return (
     <div className="flex flex-col w-full min-h-screen space-y-4 sm:space-y-6">
+      {/* Loading Spinner Overlay */}
+      {loading && (
+        <div className="fixed inset-0 bg-black bg-opacity-20 flex items-center justify-center z-50">
+          <svg className="animate-spin h-16 w-16 text-purple-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+          </svg>
+        </div>
+      )}
       {/* Full-screen error alert banner */}
       {message && messageType === 'error' && (
         <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', zIndex: 1000 }}>
@@ -370,24 +411,26 @@ function SaleItems() {
         </p>
       </div>
       {/* AI Insights Panel */}
-      <div className="bg-red-50 border border-red-200 rounded-xl p-4 sm:p-6 mb-4">
-        <div className="flex items-center mb-2">
-          <span className="text-red-500 text-xl mr-2">🤖</span>
-          <span className="font-semibold text-red-700 text-base">AI Sales Insights</span>
-                    </div>
-        <div className="text-red-700 text-sm mb-3">
-          {aiInsights.length} products are low in stock based on AI demand forecasting.
+      {!(scannedProduct && !scannedProduct.error) && (
+        <div className="bg-red-50 border border-red-200 rounded-xl p-4 sm:p-6 mb-4">
+          <div className="flex items-center mb-2">
+            <span className="text-red-500 text-xl mr-2">🤖</span>
+            <span className="font-semibold text-red-700 text-base">AI Sales Insights</span>
+          </div>
+          <div className="text-red-700 text-sm mb-3">
+            {aiInsights.length} products are low in stock based on AI demand forecasting.
+          </div>
+          <div className="space-y-3">
+            {aiInsights.map((alert, idx) => (
+              <div key={idx} className="bg-white border border-red-200 rounded-lg p-3">
+                <div className="font-semibold text-gray-800">{alert.name}</div>
+                <div className="text-gray-600 text-xs">Current: {alert.current} units</div>
+                <div className="text-red-600 text-xs font-medium">AI Reorder Suggestion: {alert.reorder} units</div>
+              </div>
+            ))}
+          </div>
         </div>
-        <div className="space-y-3">
-          {aiInsights.map((alert, idx) => (
-            <div key={idx} className="bg-white border border-red-200 rounded-lg p-3">
-              <div className="font-semibold text-gray-800">{alert.name}</div>
-              <div className="text-gray-600 text-xs">Current: {alert.current} units</div>
-              <div className="text-red-600 text-xs font-medium">AI Reorder Suggestion: {alert.reorder} units</div>
-            </div>
-          ))}
-        </div>
-      </div>
+      )}
       {/* Master-Detail Form */}
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Master Section */}
@@ -402,15 +445,6 @@ function SaleItems() {
                   <option key={customer.id} value={customer.id}>
                     {customer.first_name} {customer.last_name} ({customer.customer_code})
                   </option>
-                ))}
-              </select>
-              </div>
-              <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">User *</label>
-              <select name="user_id" value={sale.user_id} onChange={handleSaleChange} className="border p-2 rounded w-full">
-                <option value="">Select User</option>
-                {users.map(user => (
-                  <option key={user.id} value={user.id}>{user.name || user.username || user.email}</option>
                 ))}
               </select>
               </div>
@@ -466,6 +500,7 @@ function SaleItems() {
                   });
                 }}
                 className="border p-2 rounded w-full"
+                disabled={scannedProduct && !scannedProduct.error}
               >
                 <option value="">Select Product</option>
                 {products.map(product => (
@@ -605,7 +640,15 @@ function SaleItems() {
             >×</button>
 
             {/* Store Name and Info */}
-            <div className="text-center font-extrabold text-2xl mb-2 tracking-wide text-purple-700">XYZ Electronics Store</div>
+            <div className="text-center font-extrabold text-2xl mb-2 tracking-wide text-purple-700">
+              {(() => {
+                if (receiptData.store_id && Array.isArray(stores)) {
+                  const store = stores.find(s => s.id === receiptData.store_id);
+                  return store ? (store.name || store.store_name || store.id) : 'XYZ Electronics Store';
+                }
+                return 'XYZ Electronics Store';
+              })()}
+            </div>
             <div className="text-center text-gray-600 mb-1 text-sm">123 Main St, Kigali</div>
             <div className="text-center text-gray-600 mb-3 text-sm">Phone: +250 789 123 456</div>
             <div className="text-center text-gray-300 mb-3">────────────────────────────</div>
@@ -618,7 +661,7 @@ function SaleItems() {
             <div className="flex justify-between mb-1">
               <span className="font-medium">Date:</span>
               <span className="text-gray-700">
-                {receiptData.sale_date ? receiptData.sale_date.slice(2, 10).replace(/-/g, '/') : ''}
+                {receiptData.sale_date ? new Date(receiptData.sale_date).toLocaleDateString() : ''}
               </span>
             </div>
             <div className="flex justify-between mb-1">
@@ -631,14 +674,28 @@ function SaleItems() {
             </div>
             <div className="flex justify-between mb-1">
               <span className="font-medium">Cashier:</span>
-              <span className="text-gray-700">John Doe</span> {/* Replace with actual cashier if available */}
+              <span className="text-gray-700">
+                {(() => {
+                  if (receiptData.user_id && Array.isArray(users)) {
+                    const user = users.find(u => u.id === receiptData.user_id);
+                    return user ? (user.name || user.username || user.email) : (receiptData.user_name || receiptData.user_id || 'N/A');
+                  }
+                  return receiptData.user_name || receiptData.user_id || 'N/A';
+                })()}
+              </span>
             </div>
             <div className="flex justify-between mb-3">
               <span className="font-medium">Payment:</span>
-              <span className="text-gray-700">Cash</span> {/* Replace with actual payment method if available */}
+              <span className="text-gray-700">{receiptData.payment_method ? receiptData.payment_method.charAt(0).toUpperCase() + receiptData.payment_method.slice(1) : 'N/A'}</span>
             </div>
             <div className="mb-1 text-gray-700">
-              <span className="font-medium">Customer:</span> {receiptData.customer_name || (receiptData.customer?.first_name + ' ' + receiptData.customer?.last_name) || ''}
+              <span className="font-medium">Customer:</span> {(() => {
+                if (receiptData.customer_id && Array.isArray(customers)) {
+                  const customer = customers.find(c => c.id === receiptData.customer_id);
+                  return customer ? `${customer.first_name} ${customer.last_name}` : (receiptData.customer_name || receiptData.customer_id || '');
+                }
+                return receiptData.customer_name || (receiptData.customer?.first_name + ' ' + receiptData.customer?.last_name) || receiptData.customer_id || '';
+              })()}
             </div>
             <div className="text-center text-gray-300 mb-3">────────────────────────────</div>
 
@@ -648,18 +705,16 @@ function SaleItems() {
                 <span className="flex-1">Item</span>
                 <span className="w-10 text-right">Qty</span>
                 <span className="w-16 text-right">Price</span>
-                <span className="w-16 text-right">Total</span>
               </div>
               {receiptData.items && receiptData.items.map((item, idx) => (
                 <div className="flex items-center mb-1.5" key={idx}>
                   <span className="flex-1 truncate">{item.product_name}</span>
                   <span className="w-10 text-right">{item.quantity}</span>
                   <span className="w-16 text-right">${Number(item.unit_price).toFixed(2)}</span>
-                  <span className="w-16 text-right">${(item.quantity * item.unit_price).toFixed(2)}</span>
                 </div>
               ))}
             </div>
-            <div className="text-center text-gray-300 mt-3 mb-3">────────────────────────────</div>
+            <div className="text-center text-gray-300 mt-3 mb-3">───────────────────────────────</div>
 
             {/* Totals */}
             <div className="flex justify-between mb-2 text-base">
@@ -670,9 +725,9 @@ function SaleItems() {
               <span>Discount:</span>
               <span className="text-green-600">-${Number(receiptData && receiptData.discount_amount || 0).toFixed(2)}</span>
             </div>
-            <div className="flex justify-between mb-2 text-base">
-              <span>VAT 18%:</span>
-              <span>${vat.toFixed(2)}</span>
+            <div className="flex justify-between mb-2 text-base font-bold text-red-600">
+              <span>VAT</span>
+              <span>Not included</span>
             </div>
             <div className="flex justify-between font-bold border-t border-dashed mt-3 pt-3 text-xl">
               <span>Total:</span>
@@ -686,7 +741,7 @@ function SaleItems() {
               <span>Balance:</span>
               <span>$0.00</span>
             </div>
-            <div className="text-center text-gray-300 mt-3 mb-3">────────────────────────────</div>
+            <div className="text-center text-gray-300 mt-3 mb-3">----------------------------------------------------</div>
 
             {/* Thank You */}
             <div className="text-center mt-3 mb-1 font-semibold text-purple-700 text-lg">Thank you for shopping!</div>
@@ -703,56 +758,126 @@ function SaleItems() {
                 onClick={() => setReceiptData(null)}
               >Close</button>
             </div>
+
+            {/* Print-specific style for better print padding/margin */}
+            <style>{`
+              @media print {
+                .pos-receipt {
+                  padding: 12px !important;
+                  margin: 32px auto !important;
+                  box-shadow: none !important;
+                  border-radius: 0 !important;
+                  max-width: 40vw !important;
+                  min-width: 0 !important;
+                  width: 40vw !important;
+                }
+                body {
+                  background: #fff !important;
+                  margin: 0 !important;
+                }
+              }
+            `}</style>
           </div>
         </div>
       )}
       {/* Sales Table (Read) - Now at the bottom */}
-      <div className="bg-white rounded-xl shadow p-4 sm:p-6 w-full mt-4">
-        <h2 className="text-lg font-bold mb-4">All Sales</h2>
-        <div className="overflow-x-auto rounded-xl border border-gray-200 shadow-sm">
-          <table className="min-w-full text-xs sm:text-sm bg-white rounded-xl overflow-hidden">
-            <thead>
-              <tr className="bg-gray-100 text-gray-700">
-                <th className="py-3 px-3 font-semibold text-left whitespace-nowrap">Sale #</th>
-                <th className="py-3 px-3 font-semibold text-left whitespace-nowrap">Product Name(s)</th>
-                <th className="py-3 px-3 font-semibold text-right whitespace-nowrap">Quantity</th>
-                <th className="py-3 px-3 font-semibold text-right whitespace-nowrap">Unit Price</th>
-                <th className="py-3 px-3 font-semibold text-right whitespace-nowrap">Total Amount</th>
-                <th className="py-3 px-3 font-semibold text-left whitespace-nowrap">Date</th>
-                <th className="py-3 px-3 font-semibold text-center whitespace-nowrap">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {sales.map((sale, idx) => {
+      {!(scannedProduct && !scannedProduct.error) && (
+        <div className="bg-white rounded-xl shadow p-4 sm:p-6 w-full mt-4">
+          <h2 className="text-lg font-bold mb-4">All Sales</h2>
+          {/* Table for sm+ screens */}
+          <div className="overflow-x-auto rounded-xl border border-gray-200 shadow-sm hidden sm:block">
+            <table className="min-w-full text-xs sm:text-sm bg-white rounded-xl overflow-hidden">
+              <thead>
+                <tr className="bg-gray-100 text-gray-700">
+                  <th className="py-3 px-3 font-semibold text-left whitespace-nowrap">Sale #</th>
+                  <th className="py-3 px-3 font-semibold text-left whitespace-nowrap">Product Name(s)</th>
+                  <th className="py-3 px-3 font-semibold text-right whitespace-nowrap">Quantity</th>
+                  <th className="py-3 px-3 font-semibold text-right whitespace-nowrap">Unit Price</th>
+                  <th className="py-3 px-3 font-semibold text-right whitespace-nowrap">Total Amount</th>
+                  <th className="py-3 px-3 font-semibold text-left whitespace-nowrap">Date</th>
+                  <th className="py-3 px-3 font-semibold text-center whitespace-nowrap">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {sales.map((sale, idx) => {
+                  const items = sale.items || [];
+                  const productNames = items.map(i => i.product_name).join(', ');
+                  const totalQty = items.reduce((sum, i) => sum + Number(i.quantity), 0);
+                  const unitPrices = items.map(i => Number(i.unit_price).toFixed(2)).join(', ');
+                  return (
+                    <tr key={sale.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50 hover:bg-purple-50 transition'}>
+                      <td className="py-2 px-3 font-semibold text-gray-800 whitespace-nowrap">{sale.sale_number}</td>
+                      <td className="py-2 px-3 whitespace-nowrap truncate max-w-xs">{productNames}</td>
+                      <td className="py-2 px-3 text-right whitespace-nowrap">{totalQty}</td>
+                      <td className="py-2 px-3 text-right whitespace-nowrap">{unitPrices}</td>
+                      <td className="py-2 px-3 text-right whitespace-nowrap">${sale.total_amount}</td>
+                      <td className="py-2 px-3 whitespace-nowrap">{sale.sale_date ? sale.sale_date.slice(0, 10) : ''}</td>
+                      <td className="py-2 px-3 text-center whitespace-nowrap">
+                        <button
+                          onClick={() => handleViewReceipt(sale.id)}
+                          className="text-green-600 hover:text-green-800 p-1 mr-2"
+                        >
+                          View Receipt
+                        </button>
+                        <button onClick={() => handleEditSale(sale)} className="text-blue-600 hover:text-blue-800 p-1 mr-2">Edit</button>
+                        <button onClick={() => handleDeleteSale(sale.id)} className="text-red-600 hover:text-red-800 p-1">Delete</button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+          {/* Card layout for mobile */}
+          <div className="block sm:hidden space-y-4">
+            {sales.length === 0 ? (
+              <div className="py-6 text-center text-gray-400 border rounded-xl">No sales found.</div>
+            ) : (
+              sales.map((sale) => {
                 const items = sale.items || [];
                 const productNames = items.map(i => i.product_name).join(', ');
                 const totalQty = items.reduce((sum, i) => sum + Number(i.quantity), 0);
                 const unitPrices = items.map(i => Number(i.unit_price).toFixed(2)).join(', ');
                 return (
-                  <tr key={sale.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50 hover:bg-purple-50 transition'}>
-                    <td className="py-2 px-3 font-semibold text-gray-800 whitespace-nowrap">{sale.sale_number}</td>
-                    <td className="py-2 px-3 whitespace-nowrap truncate max-w-xs">{productNames}</td>
-                    <td className="py-2 px-3 text-right whitespace-nowrap">{totalQty}</td>
-                    <td className="py-2 px-3 text-right whitespace-nowrap">{unitPrices}</td>
-                    <td className="py-2 px-3 text-right whitespace-nowrap">${sale.total_amount}</td>
-                    <td className="py-2 px-3 whitespace-nowrap">{sale.sale_date ? sale.sale_date.slice(0, 10) : ''}</td>
-                    <td className="py-2 px-3 text-center whitespace-nowrap">
+                  <div key={sale.id} className="border rounded-xl p-4 shadow-sm bg-white">
+                    <div className="font-semibold text-base text-gray-800 mb-1 flex justify-between">
+                      <span>Sale #: {sale.sale_number}</span>
+                      <span className="text-xs text-gray-500">{sale.sale_date ? sale.sale_date.slice(0, 10) : ''}</span>
+                    </div>
+                    <div className="text-gray-600 text-sm mb-1"><span className="font-medium">Products:</span> {productNames}</div>
+                    <div className="text-gray-600 text-sm mb-1"><span className="font-medium">Quantity:</span> {totalQty}</div>
+                    <div className="text-gray-600 text-sm mb-1"><span className="font-medium">Unit Price:</span> {unitPrices}</div>
+                    <div className="text-gray-800 text-base font-bold mb-1 flex justify-between">
+                      <span>Total:</span>
+                      <span>${sale.total_amount}</span>
+                    </div>
+                    <div className="flex gap-3 mt-2">
                       <button
                         onClick={() => handleViewReceipt(sale.id)}
-                        className="text-green-600 hover:text-green-800 p-1 mr-2"
+                        className="flex-1 bg-green-100 text-green-700 py-1 rounded-lg font-medium text-xs hover:bg-green-200 transition"
                       >
                         View Receipt
                       </button>
-                      <button onClick={() => handleEditSale(sale)} className="text-blue-600 hover:text-blue-800 p-1 mr-2">Edit</button>
-                      <button onClick={() => handleDeleteSale(sale.id)} className="text-red-600 hover:text-red-800 p-1">Delete</button>
-                    </td>
-                  </tr>
+                      <button
+                        onClick={() => handleEditSale(sale)}
+                        className="flex-1 bg-blue-100 text-blue-700 py-1 rounded-lg font-medium text-xs hover:bg-blue-200 transition"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => handleDeleteSale(sale.id)}
+                        className="flex-1 bg-red-100 text-red-700 py-1 rounded-lg font-medium text-xs hover:bg-red-200 transition"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </div>
                 );
-              })}
-            </tbody>
-          </table>
+              })
+            )}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
