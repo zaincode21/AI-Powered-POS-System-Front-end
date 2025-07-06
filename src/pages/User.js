@@ -5,6 +5,7 @@ import {
   updateUser,
   deleteUser as deleteUserApi
 } from '../services/userService';
+import { getStores } from '../services/storeService';
 
 function User() {
   const [users, setUsers] = useState([]);
@@ -15,17 +16,18 @@ function User() {
     email: '',
     full_name: '',
     role: 'cashier',
-    is_active: true
+    is_active: true,
+    store_id: ''
   });
-  const [loading, setLoading] = useState(false);
-  console.log(loading)
-
-  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [message, setMessage] = useState('');
   const [messageType, setMessageType] = useState(''); // 'success' or 'error'
+  const [stores, setStores] = useState([]);
 
   useEffect(() => {
     fetchUsers();
+    fetchStores();
   }, []);
 
   useEffect(() => {
@@ -35,12 +37,28 @@ function User() {
     }
   }, [message]);
 
+  let user = null;
+  try {
+    user = JSON.parse(localStorage.getItem('user'));
+  } catch {}
+  const role = user?.role;
+  if (role === 'manager') {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="bg-white p-8 rounded-xl shadow-md text-center">
+          <h2 className="text-2xl font-bold mb-4 text-red-600">Not Authorized</h2>
+          <p className="text-gray-700">You do not have permission to access this page.</p>
+        </div>
+      </div>
+    );
+  }
+
   async function fetchUsers() {
     setLoading(true);
-    setError('');
     try {
       const data = await getUsers();
       setUsers(data);
+      setError(null);
     } catch (err) {
       setError('Failed to fetch users');
     } finally {
@@ -48,15 +66,23 @@ function User() {
     }
   }
 
+  async function fetchStores() {
+    try {
+      const data = await getStores();
+      setStores(data);
+    } catch (err) {
+      // Optionally handle error
+    }
+  }
+
   const handleAddUser = async () => {
-    if (formData.username.trim() && formData.email.trim()) {
+    if (formData.username.trim() && formData.email.trim() && formData.store_id) {
       setLoading(true);
-      setError('');
       try {
         await createUser(formData);
         fetchUsers();
         setShowAddModal(false);
-        setFormData({ username: '', email: '', full_name: '', role: 'cashier', is_active: true });
+        setFormData({ username: '', email: '', full_name: '', role: 'cashier', is_active: true, store_id: '' });
         setMessage('User added successfully!');
         setMessageType('success');
       } catch (err) {
@@ -78,12 +104,11 @@ function User() {
   const handleEditUser = async () => {
     if (editingUser && formData.username.trim() && formData.email.trim()) {
       setLoading(true);
-      setError('');
       try {
         await updateUser(editingUser.id, formData);
         fetchUsers();
         setEditingUser(null);
-        setFormData({ username: '', email: '', full_name: '', role: 'cashier', is_active: true });
+        setFormData({ username: '', email: '', full_name: '', role: 'cashier', is_active: true, store_id: '' });
         setMessage('User updated successfully!');
         setMessageType('success');
       } catch (err) {
@@ -105,7 +130,6 @@ function User() {
   const handleDeleteUser = async (id) => {
     if (window.confirm('Are you sure you want to delete this user?')) {
       setLoading(true);
-      setError('');
       try {
         await deleteUserApi(id);
         fetchUsers();
@@ -134,15 +158,47 @@ function User() {
       email: user.email,
       full_name: user.full_name,
       role: user.role,
-      is_active: user.is_active
+      is_active: user.is_active,
+      store_id: user.store_id || ''
     });
   };
 
   const closeModal = () => {
     setShowAddModal(false);
     setEditingUser(null);
-    setFormData({ username: '', email: '', full_name: '', role: 'cashier', is_active: true });
+    setFormData({ username: '', email: '', full_name: '', role: 'cashier', is_active: true, store_id: '' });
   };
+
+  if (loading) {
+    return (
+      <div className="flex flex-col flex-1 w-full min-h-screen p-0 sm:p-2 md:p-4 lg:p-6">
+        <div className="flex items-center justify-center h-full">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
+            <p className="text-gray-600">Loading user data...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col flex-1 w-full min-h-screen p-0 sm:p-2 md:p-4 lg:p-6">
+        <div className="flex items-center justify-center h-full">
+          <div className="text-center">
+            <p className="text-red-600 mb-4">{error}</p>
+            <button 
+              onClick={() => window.location.reload()} 
+              className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700"
+            >
+              Retry
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col w-full min-h-screen space-y-4 sm:space-y-6">
@@ -180,6 +236,7 @@ function User() {
                 <th className="py-3 px-3 font-semibold">Full Name</th>
                 <th className="py-3 px-3 font-semibold">Role</th>
                 <th className="py-3 px-3 font-semibold">Active</th>
+                <th className="py-3 px-3 font-semibold">Store</th>
                 <th className="py-3 px-3 font-semibold">Last Login</th>
                 <th className="py-3 px-3 font-semibold">Created At</th>
                 <th className="py-3 px-3 font-semibold">Actions</th>
@@ -201,8 +258,11 @@ function User() {
                       {user.is_active ? 'Active' : 'Inactive'}
                     </span>
                   </td>
-                  <td className="py-3 px-3 text-xs">{user.last_login || '-'}</td>
-                  <td className="py-3 px-3 text-xs">{user.created_at}</td>
+                  <td className="py-3 px-3">
+                    {stores.find(store => store.id === user.store_id)?.name || user.store_id || 'N/A'}
+                  </td>
+                  <td className="py-3 px-3">{user.last_login ? new Date(user.last_login).toLocaleString() : '-'}</td>
+                  <td className="py-3 px-3">{user.created_at ? new Date(user.created_at).toLocaleString() : '-'}</td>
                   <td className="py-3 px-3">
                     <div className="flex items-center gap-2">
                       <button
@@ -331,6 +391,21 @@ function User() {
                   id="is_active"
                 />
                 <label htmlFor="is_active" className="text-sm">Active</label>
+              </div>
+              <div className="mb-4">
+                <label className="block text-gray-700 font-medium mb-2">Store<span className="text-red-500">*</span></label>
+                <select
+                  className="border p-2 rounded w-full"
+                  name="store_id"
+                  value={formData.store_id || ''}
+                  onChange={e => setFormData({ ...formData, store_id: e.target.value })}
+                  required
+                >
+                  <option value="">Select Store</option>
+                  {stores.map(store => (
+                    <option key={store.id} value={store.id}>{store.name}</option>
+                  ))}
+                </select>
               </div>
               <div className="flex justify-end gap-2 mt-4">
                 <button

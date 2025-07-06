@@ -1,56 +1,127 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend
 } from 'recharts';
+import { getSalesStats, getDailySales, getRecentSales } from '../services/saleService';
+import { getInventoryData } from '../services/productService';
+import { getCustomers } from '../services/customerService';
 
 function Dashboard() {
-  // Dummy data for stats
-  const stats = [
-    { label: 'Sales Today', value: '$1,250', icon: '💰' },
-    { label: 'Total Customers', value: 320, icon: '🧑‍🤝‍🧑' },
-    { label: 'Inventory Value', value: '$8,400', icon: '📦' },
-    { label: 'Low Stock', value: 3, icon: '⚠️' },
-    { label: 'AI Forecast', value: 'Sneakers', icon: '🤖' },
-  ];
-
-  const inventory = [
-    { name: 'Shirt', category: 'Clothes', quantity: 5, price: 20, status: 'In Stock' },
-    { name: 'Dior', category: 'Perfume', quantity: 0, price: 45, status: 'Out-Stock' },
-    { name: 'Dress', category: 'Clothes', quantity: 12, price: 50, status: 'In Stock' },
-    { name: 'Sneakers', category: 'Clothes', quantity: 2, price: 60, status: 'Low Stock' },
-  ];
-
-  const recentActivity = [
-    'Processed sale: 2x Dress',
-    'Generated barcode for Dior',
-    'AI Forecast: High demand for Sneakers next week',
-    'Added new customer: John Doe',
-  ];
-
-  // Chart Data
-  const salesData = [
-    { name: 'Mon', sales: 200 },
-    { name: 'Tue', sales: 350 },
-    { name: 'Wed', sales: 400 },
-    { name: 'Thu', sales: 300 },
-    { name: 'Fri', sales: 500 },
-    { name: 'Sat', sales: 600 },
-    { name: 'Sun', sales: 700 },
-  ];
-
-  const demandForecastData = [
-    { name: 'Shirt', forecast: 30 },
-    { name: 'Dior', forecast: 10 },
-    { name: 'Dress', forecast: 50 },
-    { name: 'Sneakers', forecast: 70 },
-  ];
-
-  const customerInsightsData = [
-    { name: 'Returning', value: 220 },
-    { name: 'New', value: 100 },
-  ];
+  const [stats, setStats] = useState([]);
+  const [inventory, setInventory] = useState([]);
+  const [recentActivity, setRecentActivity] = useState([]);
+  const [salesData, setSalesData] = useState([]);
+  const [demandForecastData, setDemandForecastData] = useState([]);
+  const [customerInsightsData, setCustomerInsightsData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   const COLORS = ['#7c3aed', '#38bdf8'];
+
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        setLoading(true);
+        
+        // Fetch all dashboard data in parallel
+        const [salesStats, dailySales, inventoryData, recentSales, customers] = await Promise.all([
+          getSalesStats(),
+          getDailySales(),
+          getInventoryData(),
+          getRecentSales(),
+          getCustomers()
+        ]);
+
+        // Process sales statistics
+        const processedStats = [
+          { label: 'Sales Today', value: `$${salesStats.todaySales.toFixed(2)}`, icon: '💰' },
+          { label: 'Total Customers', value: salesStats.totalCustomers, icon: '🧑‍🤝‍🧑' },
+          { label: 'Inventory Value', value: `$${salesStats.inventoryValue.toFixed(2)}`, icon: '📦' },
+          { label: 'Low Stock', value: salesStats.lowStockCount, icon: '⚠️' },
+          { label: 'AI Forecast', value: salesStats.bestSeller, icon: '🤖' },
+        ];
+
+        // Process inventory data
+        const processedInventory = inventoryData.map(item => ({
+          name: item.name,
+          category: item.category_name || 'Uncategorized',
+          quantity: item.quantity,
+          price: parseFloat(item.price),
+          status: item.status
+        }));
+
+        // Process recent activity from recent sales
+        const processedActivity = recentSales.slice(0, 4).map(sale => 
+          `Processed sale: ${sale.sale_number} - $${parseFloat(sale.total_amount).toFixed(2)}`
+        );
+
+        // Add some placeholder activities if not enough sales
+        while (processedActivity.length < 4) {
+          processedActivity.push('No recent activity');
+        }
+
+        // Process customer insights
+        const returningCustomers = Math.floor(customers.length * 0.7); // 70% returning customers
+        const newCustomers = customers.length - returningCustomers;
+        const processedCustomerInsights = [
+          { name: 'Returning', value: returningCustomers },
+          { name: 'New', value: newCustomers },
+        ];
+
+        // Simple demand forecast based on inventory levels
+        const processedDemandForecast = inventoryData.slice(0, 4).map(item => ({
+          name: item.name,
+          forecast: Math.floor(Math.random() * 50) + 20 // Random forecast for demo
+        }));
+
+        setStats(processedStats);
+        setInventory(processedInventory);
+        setRecentActivity(processedActivity);
+        setSalesData(dailySales);
+        setDemandForecastData(processedDemandForecast);
+        setCustomerInsightsData(processedCustomerInsights);
+
+      } catch (err) {
+        console.error('Error fetching dashboard data:', err);
+        setError('Failed to load dashboard data');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDashboardData();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex flex-col flex-1 w-full min-h-screen p-0 sm:p-2 md:p-4 lg:p-6">
+        <div className="flex items-center justify-center h-full">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
+            <p className="text-gray-600">Loading dashboard data...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col flex-1 w-full min-h-screen p-0 sm:p-2 md:p-4 lg:p-6">
+        <div className="flex items-center justify-center h-full">
+          <div className="text-center">
+            <p className="text-red-600 mb-4">{error}</p>
+            <button 
+              onClick={() => window.location.reload()} 
+              className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700"
+            >
+              Retry
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col flex-1 w-full min-h-screen p-0 sm:p-2 md:p-4 lg:p-6">
@@ -182,16 +253,16 @@ function Dashboard() {
         <h2 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">Business Intelligence</h2>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 w-full">
           <div className="bg-purple-50 rounded-lg p-3 sm:p-4 flex flex-col items-center w-full">
-            <span className="text-lg sm:text-2xl font-bold text-purple-700 mb-1 sm:mb-2">$3,200</span>
-            <span className="text-gray-600 text-xs sm:text-base">Monthly Profit</span>
+            <span className="text-lg sm:text-2xl font-bold text-purple-700 mb-1 sm:mb-2">${stats[0]?.value?.replace('$', '') || '0'}</span>
+            <span className="text-gray-600 text-xs sm:text-base">Today's Sales</span>
           </div>
           <div className="bg-blue-50 rounded-lg p-3 sm:p-4 flex flex-col items-center w-full">
-            <span className="text-lg sm:text-2xl font-bold text-blue-700 mb-1 sm:mb-2">Dress</span>
+            <span className="text-lg sm:text-2xl font-bold text-blue-700 mb-1 sm:mb-2">{stats[4]?.value || 'N/A'}</span>
             <span className="text-gray-600 text-xs sm:text-base">Best Seller</span>
           </div>
           <div className="bg-green-50 rounded-lg p-3 sm:p-4 flex flex-col items-center w-full">
-            <span className="text-lg sm:text-2xl font-bold text-green-700 mb-1 sm:mb-2">98%</span>
-            <span className="text-gray-600 text-xs sm:text-base">Customer Satisfaction</span>
+            <span className="text-lg sm:text-2xl font-bold text-green-700 mb-1 sm:mb-2">{stats[1]?.value || 0}</span>
+            <span className="text-gray-600 text-xs sm:text-base">Total Customers</span>
           </div>
         </div>
       </div>

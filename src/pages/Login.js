@@ -5,7 +5,7 @@ import { loginUser } from '../services/userService';
 function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState('cashier');
+  const [role, setRole] = useState('inventory');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const navigate = useNavigate();
@@ -18,7 +18,13 @@ function Login() {
       const { token, user } = await loginUser({ email, password, role });
       localStorage.setItem('token', token);
       localStorage.setItem('user', JSON.stringify(user));
-      navigate('/'); // Redirect to dashboard
+      if (user.role === 'cashier') {
+        navigate('/stock-out');
+      } else if (user.role === 'inventory') {
+        navigate('/product');
+      } else {
+        navigate('/');
+      }
     } catch (err) {
       setError(err.message || 'Login failed');
     } finally {

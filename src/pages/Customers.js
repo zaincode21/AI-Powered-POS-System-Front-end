@@ -5,117 +5,21 @@ import {
   updateCustomer,
   deleteCustomer
 } from '../services/customerService';
+import { Pencil, Trash2, LayoutGrid, List } from 'lucide-react';
 
-function Customers() {
+const Customers = () => {
   const [customers, setCustomers] = useState([]);
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [editingCustomer, setEditingCustomer] = useState(null);
-  const [formData, setFormData] = useState({
-    customer_code: '',
-    first_name: '',
-    last_name: '',
-    email: '',
-    phone: '',
-    gender: '',
-    city: '',
-    total_purchases: 0,
-    total_spent: 0,
-    is_active: true
-  });
-  const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState('');
-  const [messageType, setMessageType] = useState('');
+  const [search, setSearch] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [showModal, setShowModal] = useState(false);
+  const [modalType, setModalType] = useState('add'); // 'add' or 'edit'
+  const [selectedCustomer, setSelectedCustomer] = useState(null);
+  const [form, setForm] = useState({ full_name: '', email: '', phone: '', tin: '' });
+  const [formError, setFormError] = useState('');
+  const [viewMode, setViewMode] = useState('table'); // 'table' or 'card'
 
-  // Fetch all customers on mount
-  useEffect(() => {
-    fetchCustomers();
-  }, []);
-
-  const fetchCustomers = async () => {
-    setLoading(true);
-    try {
-      const data = await getCustomers();
-      setCustomers(data);
-    } catch (err) {
-      setMessage('Failed to fetch customers');
-      setMessageType('error');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleAddCustomer = async () => {
-    if (formData.first_name && formData.last_name && formData.email) {
-      setLoading(true);
-      try {
-        const { customer_code, ...payload } = formData;
-        await createCustomer(payload);
-        setMessage('Customer added successfully!');
-        setMessageType('success');
-        fetchCustomers();
-        setFormData({ first_name: '', last_name: '', email: '', phone: '', gender: '', city: '', total_purchases: 0, total_spent: 0, is_active: true });
-        setShowAddModal(false);
-      } catch (err) {
-        setMessage('Failed to add customer');
-        setMessageType('error');
-      } finally {
-        setLoading(false);
-        setTimeout(() => setMessage(''), 3000);
-      }
-    }
-  };
-
-  const handleEditCustomer = async () => {
-    if (editingCustomer && formData.first_name && formData.last_name && formData.email) {
-      setLoading(true);
-      try {
-        const { customer_code, ...payload } = formData;
-        await updateCustomer(editingCustomer.id, payload);
-        setMessage('Customer updated successfully!');
-        setMessageType('success');
-        fetchCustomers();
-        setEditingCustomer(null);
-        setFormData({ first_name: '', last_name: '', email: '', phone: '', gender: '', city: '', total_purchases: 0, total_spent: 0, is_active: true });
-      } catch (err) {
-        setMessage('Failed to update customer');
-        setMessageType('error');
-      } finally {
-        setLoading(false);
-        setTimeout(() => setMessage(''), 3000);
-      }
-    }
-  };
-
-  const handleDeleteCustomer = async (id) => {
-    if (window.confirm('Are you sure you want to delete this customer?')) {
-      setLoading(true);
-      try {
-        await deleteCustomer(id);
-        setMessage('Customer deleted successfully!');
-        setMessageType('success');
-        fetchCustomers();
-      } catch (err) {
-        setMessage('Failed to delete customer');
-        setMessageType('error');
-      } finally {
-        setLoading(false);
-        setTimeout(() => setMessage(''), 3000);
-      }
-    }
-  };
-
-  const openEditModal = (customer) => {
-    setEditingCustomer(customer);
-    setFormData({ ...customer });
-  };
-
-  const closeModal = () => {
-    setShowAddModal(false);
-    setEditingCustomer(null);
-    setFormData({ first_name: '', last_name: '', email: '', phone: '', gender: '', city: '', total_purchases: 0, total_spent: 0, is_active: true });
-  };
-
-  // Example AI reorder alerts data
+  // Example AI reorder alerts data (static for now)
   const reorderAlerts = [
     {
       name: 'Lavender Dreams Perfume',
@@ -129,31 +33,133 @@ function Customers() {
     }
   ];
 
+  // Fetch customers
+  const fetchCustomers = async () => {
+    setLoading(true);
+    try {
+      const data = await getCustomers();
+      setCustomers(data);
+      setError('');
+    } catch (err) {
+      setError(err.message);
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    fetchCustomers();
+    // eslint-disable-next-line
+  }, []);
+
+  // Handle form input
+  const handleInput = (e) => {
+    setForm({ ...form, [e.target.name]: e.target.value });
+  };
+
+  // Open Add/Edit Modal
+  const openModal = (type, customer = null) => {
+    setModalType(type);
+    setSelectedCustomer(customer);
+    setForm(customer ? { ...customer } : { full_name: '', email: '', phone: '', tin: '' });
+    setShowModal(true);
+    setFormError('');
+  };
+
+  // Close Modal
+  const closeModal = () => {
+    setShowModal(false);
+    setSelectedCustomer(null);
+    setFormError('');
+  };
+
+  // Add or Edit Customer
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setFormError('');
+    try {
+      if (modalType === 'add') {
+        await createCustomer(form);
+      } else {
+        await updateCustomer(selectedCustomer.id, form);
+      }
+      closeModal();
+      fetchCustomers();
+    } catch (err) {
+      setFormError(err.message);
+    }
+  };
+
+  // Delete Customer
+  const handleDelete = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this customer?')) return;
+    try {
+      await deleteCustomer(id);
+      fetchCustomers();
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
+  // Filtered customers
+  const filteredCustomers = customers.filter(c =>
+    [c.full_name, c.email, c.phone, c.tin].join(' ').toLowerCase().includes(search.toLowerCase())
+  );
+
+  if (loading) {
+    return (
+      <div className="flex flex-col flex-1 w-full min-h-screen p-0 sm:p-2 md:p-4 lg:p-6">
+        <div className="flex items-center justify-center h-full">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
+            <p className="text-gray-600">Loading customer data...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col flex-1 w-full min-h-screen p-0 sm:p-2 md:p-4 lg:p-6">
+        <div className="flex items-center justify-center h-full">
+          <div className="text-center">
+            <p className="text-red-600 mb-4">{error}</p>
+            <button 
+              onClick={() => window.location.reload()} 
+              className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700"
+            >
+              Retry
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col w-full min-h-screen space-y-4 sm:space-y-6">
-      {/* Feedback Message */}
-      {message && (
-        <div className={`mb-4 p-3 rounded ${messageType === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-          {message}
+      <div className="bg-white rounded-xl shadow p-4 sm:p-6 w-full flex flex-col sm:flex-row items-center justify-between mb-4 gap-2">
+        <div className="flex items-center gap-2">
+          <h1 className="text-xl sm:text-2xl font-bold text-purple-700">Customers Management</h1>
+          
         </div>
-      )}
-      {/* Header */}
-      <div className="bg-white rounded-xl shadow p-4 sm:p-6 w-full">
-        <div className="flex flex-col sm:flex-row items-center justify-between mb-4 sm:mb-6 gap-2 sm:gap-0">
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-800">Customers Management</h1>
-          <button 
-            onClick={() => setShowAddModal(true)}
+        <div className="flex gap-2 w-full sm:w-auto">
+          <input
+            type="text"
+            placeholder="Search customers..."
+            className="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm w-full sm:w-64"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+          />
+          <button
+            onClick={() => openModal('add')}
             className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-medium transition flex items-center gap-2"
           >
             <span>➕</span>
             Add Customer
           </button>
         </div>
-        <p className="text-gray-600 text-sm sm:text-base">
-          Manage your customers and their information.
-        </p>
       </div>
-
       {/* AI Reorder Alerts Panel */}
       <div className="bg-red-50 border border-red-200 rounded-xl p-4 sm:p-6 mb-4">
         <div className="flex items-center mb-2">
@@ -173,250 +179,138 @@ function Customers() {
           ))}
         </div>
       </div>
-
-      {/* Customers List - Table for sm+ */}
-      <div className="bg-white rounded-xl shadow p-4 sm:p-6 w-full">
-        {loading ? (
-          <div className="flex justify-center items-center py-8">
-            <svg className="animate-spin h-8 w-8 text-purple-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
-            </svg>
-          </div>
-        ) : (
-        <div className="overflow-x-auto hidden sm:block">
-          <table className="min-w-full text-xs sm:text-sm">
-            <thead>
-              <tr className="text-left text-gray-500 border-b">
-                <th className="py-3 px-3 font-semibold">Code</th>
-                <th className="py-3 px-3 font-semibold">First Name</th>
-                <th className="py-3 px-3 font-semibold">Last Name</th>
-                <th className="py-3 px-3 font-semibold">Email</th>
-                <th className="py-3 px-3 font-semibold">Phone</th>
-                <th className="py-3 px-3 font-semibold">Gender</th>
-                <th className="py-3 px-3 font-semibold">City</th>
-                <th className="py-3 px-3 font-semibold">Purchases</th>
-                <th className="py-3 px-3 font-semibold">Spent</th>
-                <th className="py-3 px-3 font-semibold">Active</th>
-                <th className="py-3 px-3 font-semibold">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {customers.map((customer) => (
-                <tr key={customer.id} className="border-b hover:bg-gray-50">
-                  <td className="py-3 px-3 font-medium">{customer.customer_code}</td>
-                  <td className="py-3 px-3">{customer.first_name}</td>
-                  <td className="py-3 px-3">{customer.last_name}</td>
-                  <td className="py-3 px-3">{customer.email}</td>
-                  <td className="py-3 px-3">{customer.phone}</td>
-                  <td className="py-3 px-3">{customer.gender}</td>
-                  <td className="py-3 px-3">{customer.city}</td>
-                  <td className="py-3 px-3">{customer.total_purchases}</td>
-                  <td className="py-3 px-3">${Number(customer.total_spent).toFixed(2)}</td>
-                  <td className="py-3 px-3">
-                    <span className={`px-2 py-1 rounded-full text-xs font-semibold ${customer.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'}`}>{customer.is_active ? 'Active' : 'Inactive'}</span>
-                  </td>
-                  <td className="py-3 px-3">
-                    <div className="flex items-center gap-2">
+      <div className="bg-white rounded-xl shadow p-4 sm:p-6 w-full overflow-x-auto">
+        {/* Table/Card Title and View Toggle */}
+        <div className="flex items-center justify-between mb-4 gap-2 flex-wrap">
+          <h2 className="text-lg font-semibold text-purple-700">Customer List</h2>
+          <button
+            className="p-2 rounded hover:bg-purple-100 transition border border-purple-200"
+            title={viewMode === 'table' ? 'Switch to Card View' : 'Switch to Table View'}
+            onClick={() => setViewMode(viewMode === 'table' ? 'card' : 'table')}
+          >
+            {viewMode === 'table' ? <LayoutGrid size={20} className="text-purple-700" /> : <List size={20} className="text-purple-700" />}
+          </button>
+        </div>
+        
+        {/* Table or Card View */}
+        {viewMode === 'table' ? (
+          <div className="overflow-x-auto">
+            <table className="min-w-full text-xs sm:text-sm">
+              <thead>
+                <tr className="text-left text-gray-500 border-b">
+                  <th className="py-3 px-3 font-semibold">Customer Number</th>
+                  <th className="py-3 px-3 font-semibold">Full Name</th>
+                  <th className="py-3 px-3 font-semibold">Email</th>
+                  <th className="py-3 px-3 font-semibold">Phone</th>
+                  <th className="py-3 px-3 font-semibold">TIN</th>
+                  <th className="py-3 px-3 font-semibold">Total Purchases</th>
+                  <th className="py-3 px-3 font-semibold">Total Spent</th>
+                  <th className="py-3 px-3 font-semibold">Loyalty Points</th>
+                  <th className="py-3 px-3 font-semibold">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredCustomers.length === 0 ? (
+                  <tr><td colSpan="9" className="text-center py-4 text-gray-400">No customers found.</td></tr>
+                ) : filteredCustomers.map(customer => (
+                  <tr key={customer.id} className="border-b hover:bg-gray-50">
+                    <td className="py-3 px-3 font-mono  font-semibold">{customer.customer_code || 'N/A'}</td>
+                    <td className="py-3 px-3 font-medium">{customer.full_name || 'N/A'}</td>
+                    <td className="py-3 px-3">{customer.email || 'N/A'}</td>
+                    <td className="py-3 px-3">{customer.phone || 'N/A'}</td>
+                    <td className="py-3 px-3">{customer.tin || 'N/A'}</td>
+                    <td className="py-3 px-3">{customer.total_purchases != null ? customer.total_purchases : 'N/A'}</td>
+                    <td className="py-3 px-3">{customer.total_spent != null ? customer.total_spent : 'N/A'}</td>
+                    <td className="py-3 px-3">{customer.loyalty_points != null ? customer.loyalty_points : 'N/A'}</td>
+                    <td className="py-3 px-3 flex gap-2">
                       <button
-                        onClick={() => openEditModal(customer)}
-                        className="text-blue-600 hover:text-blue-800 p-1"
+                        onClick={() => openModal('edit', customer)}
+                        className="bg-blue-100 text-blue-700 px-2 py-1 rounded text-xs hover:bg-blue-200 flex items-center justify-center"
                         title="Edit"
                       >
-                        ✏️
+                        <Pencil size={16} />
                       </button>
                       <button
-                        onClick={() => handleDeleteCustomer(customer.id)}
-                        className="text-red-600 hover:text-red-800 p-1"
+                        onClick={() => handleDelete(customer.id)}
+                        className="bg-red-100 text-red-700 px-2 py-1 rounded text-xs hover:bg-red-200 flex items-center justify-center"
                         title="Delete"
                       >
-                        🗑️
+                        <Trash2 size={16} />
                       </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {filteredCustomers.length === 0 ? (
+              <div className="text-center py-4 text-gray-400 col-span-full">No customers found.</div>
+            ) : filteredCustomers.map(customer => (
+              <div key={customer.id} className="border rounded-xl p-4 shadow-sm bg-white flex flex-col">
+                <div className="font-semibold text-lg text-gray-800 mb-1">{customer.full_name || 'N/A'}</div>
+                <div className="text-gray-600 text-sm mb-1">Customer #: <span className="font-mono">{customer.customer_code || 'N/A'}</span></div>
+                <div className="text-gray-600 text-sm mb-1">Email: {customer.email || 'N/A'}</div>
+                <div className="text-gray-600 text-sm mb-1">Phone: {customer.phone || 'N/A'}</div>
+                <div className="text-gray-600 text-sm mb-1">TIN: {customer.tin || 'N/A'}</div>
+                <div className="text-gray-600 text-sm mb-1">Total Purchases: {customer.total_purchases != null ? customer.total_purchases : 'N/A'}</div>
+                <div className="text-gray-600 text-sm mb-1">Total Spent: {customer.total_spent != null ? customer.total_spent : 'N/A'}</div>
+                <div className="text-gray-600 text-sm mb-1">Loyalty Points: {customer.loyalty_points != null ? customer.loyalty_points : 'N/A'}</div>
+                <div className="flex gap-3 mt-2">
+                  <button
+                    onClick={() => openModal('edit', customer)}
+                    className="flex-1 bg-blue-100 text-blue-700 py-1 rounded-lg font-medium text-xs hover:bg-blue-200 transition flex items-center justify-center"
+                    title="Edit"
+                  >
+                    <Pencil size={16} />
+                  </button>
+                  <button
+                    onClick={() => handleDelete(customer.id)}
+                    className="flex-1 bg-red-100 text-red-700 py-1 rounded-lg font-medium text-xs hover:bg-red-200 transition flex items-center justify-center"
+                    title="Delete"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
         )}
-        {/* Card layout for mobile */}
-        <div className="block sm:hidden space-y-4">
-          {customers.map((customer) => (
-            <div key={customer.id} className="border rounded-xl p-4 shadow-sm bg-white">
-              <div className="font-semibold text-lg text-gray-800 mb-1">{customer.first_name} {customer.last_name}</div>
-              <div className="text-gray-600 text-sm mb-1">Code: {customer.customer_code}</div>
-              <div className="text-gray-600 text-sm mb-1">Email: {customer.email}</div>
-              <div className="text-gray-600 text-sm mb-1">Phone: {customer.phone}</div>
-              <div className="text-gray-600 text-sm mb-1">Gender: {customer.gender}</div>
-              <div className="text-gray-600 text-sm mb-1">City: {customer.city}</div>
-              <div className="text-gray-600 text-sm mb-1">Purchases: {customer.total_purchases}</div>
-              <div className="text-gray-600 text-sm mb-1">Spent: ${Number(customer.total_spent).toFixed(2)}</div>
-              <div className="mb-2">
-                <span className={`px-2 py-1 rounded-full text-xs font-semibold ${customer.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'}`}>{customer.is_active ? 'Active' : 'Inactive'}</span>
-              </div>
-              <div className="flex gap-3 mt-2">
-                <button
-                  onClick={() => openEditModal(customer)}
-                  className="flex-1 bg-blue-100 text-blue-700 py-1 rounded-lg font-medium text-xs hover:bg-blue-200 transition"
-                >
-                  ✏️ Edit
-                </button>
-                <button
-                  onClick={() => handleDeleteCustomer(customer.id)}
-                  className="flex-1 bg-red-100 text-red-700 py-1 rounded-lg font-medium text-xs hover:bg-red-200 transition"
-                >
-                  🗑️ Delete
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
       </div>
-
-      {/* Add/Edit Modal */}
-      {(showAddModal || editingCustomer) && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-lg p-6 w-full max-w-md">
-            <h2 className="text-xl font-bold mb-4">
-              {editingCustomer ? 'Edit Customer' : 'Add New Customer'}
-            </h2>
-            <div className="space-y-4">
-              <div className="mb-2 text-xs text-gray-500 italic">
-                Customer Code will be generated automatically.
+      {/* Modal for Add/Edit */}
+      {showModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md shadow-lg">
+            <h2 className="text-lg font-semibold mb-4">{modalType === 'add' ? 'Add Customer' : 'Edit Customer'}</h2>
+            <form onSubmit={handleSubmit} className="space-y-3">
+              <div>
+                <label className="block text-sm font-medium mb-1">Full Name</label>
+                <input type="text" name="full_name" value={form.full_name} onChange={handleInput} className="w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500" required />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  First Name *
-                </label>
-                <input
-                  type="text"
-                  value={formData.first_name}
-                  onChange={(e) => setFormData({...formData, first_name: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-                  placeholder="Enter first name"
-                />
+                <label className="block text-sm font-medium mb-1">Email</label>
+                <input type="email" name="email" value={form.email} onChange={handleInput} className="w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Last Name *
-                </label>
-                <input
-                  type="text"
-                  value={formData.last_name}
-                  onChange={(e) => setFormData({...formData, last_name: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-                  placeholder="Enter last name"
-                />
+                <label className="block text-sm font-medium mb-1">Phone</label>
+                <input type="text" name="phone" value={form.phone} onChange={handleInput} className="w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Email *
-                </label>
-                <input
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => setFormData({...formData, email: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-                  placeholder="Enter email"
-                />
+                <label className="block text-sm font-medium mb-1">TIN</label>
+                <input type="text" name="tin" value={form.tin} onChange={handleInput} className="w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500" />
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Phone
-                </label>
-                <input
-                  type="text"
-                  value={formData.phone}
-                  onChange={(e) => setFormData({...formData, phone: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-                  placeholder="Enter phone number"
-                />
+              {formError && <div className="text-red-500 text-sm">{formError}</div>}
+              <div className="flex justify-end gap-2 mt-4">
+                <button type="button" onClick={closeModal} className="px-4 py-2 bg-gray-100 text-gray-700 rounded hover:bg-gray-200">Cancel</button>
+                <button type="submit" className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700">{modalType === 'add' ? 'Add' : 'Save'}</button>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Gender
-                </label>
-                <select
-                  value={formData.gender}
-                  onChange={(e) => setFormData({...formData, gender: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-                >
-                  <option value="">Select gender</option>
-                  <option value="Male">Male</option>
-                  <option value="Female">Female</option>
-                  <option value="Other">Other</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  City
-                </label>
-                <input
-                  type="text"
-                  value={formData.city}
-                  onChange={(e) => setFormData({...formData, city: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-                  placeholder="Enter city"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Total Purchases
-                </label>
-                <input
-                  type="number"
-                  value={formData.total_purchases}
-                  onChange={(e) => setFormData({...formData, total_purchases: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-                  min="0"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Total Spent
-                </label>
-                <input
-                  type="number"
-                  value={formData.total_spent}
-                  onChange={(e) => setFormData({...formData, total_spent: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-                  min="0"
-                  step="0.01"
-                />
-              </div>
-              <div className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  checked={formData.is_active}
-                  onChange={(e) => setFormData({...formData, is_active: e.target.checked})}
-                  className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
-                  id="is_active"
-                />
-                <label htmlFor="is_active" className="text-sm text-gray-700">Active</label>
-              </div>
-            </div>
-            <div className="flex gap-3 mt-6">
-              <button
-                onClick={editingCustomer ? handleEditCustomer : handleAddCustomer}
-                className="flex-1 bg-purple-600 hover:bg-purple-700 text-white py-2 rounded-lg font-medium transition"
-                disabled={loading}
-              >
-                {editingCustomer ? 'Update Customer' : 'Add Customer'}
-              </button>
-              <button
-                onClick={closeModal}
-                className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-700 py-2 rounded-lg font-medium transition"
-                disabled={loading}
-              >
-                Cancel
-              </button>
-            </div>
+            </form>
           </div>
         </div>
       )}
     </div>
   );
-}
+};
 
 export default Customers; 

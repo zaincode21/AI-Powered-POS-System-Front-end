@@ -13,6 +13,7 @@ import { QRCodeCanvas } from 'qrcode.react';
 function Product() {
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [selectedCategory, setSelectedCategory] = useState('All');
   const [suppliers, setSuppliers] = useState([]);
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
@@ -30,8 +31,8 @@ function Product() {
   });
   const [message, setMessage] = useState('');
   const [messageType, setMessageType] = useState(''); // 'success' or 'error'
-  const [loading, setLoading] = useState(false);
-  console.log(loading)
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   const [lastCreatedProduct, setLastCreatedProduct] = useState(null);
   const [showQrModal, setShowQrModal] = useState(false);
@@ -45,10 +46,10 @@ function Product() {
   // const URL = 'http://1:3000';
 
   useEffect(() => {
-    fetchProducts();
+    fetchProducts(selectedCategory);
     fetchCategories();
     getSuppliers().then(setSuppliers);
-  }, []);
+  }, [selectedCategory]);
 
   useEffect(() => {
     if (message) {
@@ -68,12 +69,14 @@ function Product() {
     }
   }, [showQrModal]);
 
-  async function fetchProducts() {
+  async function fetchProducts(categoryId = 'All') {
     setLoading(true);
     try {
-      const data = await getProducts();
+      const data = await getProducts(categoryId);
       setProducts(data);
+      setError(null);
     } catch (err) {
+      setError('Failed to fetch products');
       setMessage('Failed to fetch products');
       setMessageType('error');
     } finally {
@@ -315,6 +318,37 @@ function Product() {
     }
   };
 
+  if (loading) {
+    return (
+      <div className="flex flex-col flex-1 w-full min-h-screen p-0 sm:p-2 md:p-4 lg:p-6">
+        <div className="flex items-center justify-center h-full">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
+            <p className="text-gray-600">Loading product data...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col flex-1 w-full min-h-screen p-0 sm:p-2 md:p-4 lg:p-6">
+        <div className="flex items-center justify-center h-full">
+          <div className="text-center">
+            <p className="text-red-600 mb-4">{error}</p>
+            <button 
+              onClick={() => window.location.reload()} 
+              className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700"
+            >
+              Retry
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col w-full min-h-screen space-y-4 sm:space-y-6">
       {renderQrModal()}
@@ -339,6 +373,21 @@ function Product() {
         <p className="text-gray-600 text-sm sm:text-base">
           Manage your products and inventory efficiently.
         </p>
+      </div>
+
+      {/* Category Filter Dropdown */}
+      <div className="bg-white rounded-xl shadow p-4 sm:p-6 w-full mb-4">
+        <label className="block text-sm font-medium text-gray-700 mb-1">Filter by Category</label>
+        <select
+          value={selectedCategory}
+          onChange={e => setSelectedCategory(e.target.value)}
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+        >
+          <option value="All">All Categories</option>
+          {categories.map(cat => (
+            <option key={cat.id} value={cat.id}>{cat.name}</option>
+          ))}
+        </select>
       </div>
 
       {/* Product List - Table for sm+ */}

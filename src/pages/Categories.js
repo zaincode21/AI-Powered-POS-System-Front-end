@@ -17,8 +17,8 @@ function Categories() {
   });
   const [message, setMessage] = useState('');
   const [messageType, setMessageType] = useState(''); // 'success' or 'error'
-  const [loading, setLoading] = useState(false);
-  console.log(loading)
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   useEffect(() => {
     fetchCategories();
   }, []);
@@ -35,7 +35,9 @@ function Categories() {
     try {
       const data = await getCategories();
       setCategories(data);
+      setError(null);
     } catch (err) {
+      setError('Failed to fetch categories');
       setMessage('Failed to fetch categories');
       setMessageType('error');
     } finally {
@@ -156,6 +158,37 @@ function Categories() {
       reorder: 16
     }
   ];
+
+  if (loading) {
+    return (
+      <div className="flex flex-col flex-1 w-full min-h-screen p-0 sm:p-2 md:p-4 lg:p-6">
+        <div className="flex items-center justify-center h-full">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
+            <p className="text-gray-600">Loading category data...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col flex-1 w-full min-h-screen p-0 sm:p-2 md:p-4 lg:p-6">
+        <div className="flex items-center justify-center h-full">
+          <div className="text-center">
+            <p className="text-red-600 mb-4">{error}</p>
+            <button 
+              onClick={() => window.location.reload()} 
+              className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700"
+            >
+              Retry
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col w-full min-h-screen space-y-4 sm:space-y-6">

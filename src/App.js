@@ -3,15 +3,24 @@ import MainLayout from './layouts/MainLayout';
 import Dashboard from './pages/Dashboard';
 import Categories from './pages/Categories';
 import Product from './pages/Product';
-import Customers from './pages/Customers';
+
 import Suppliers from './pages/Suppliers';
 import User from './pages/User';
 import Store from './pages/Store';
-import SaleItems from './pages/SaleItems';
+
 import Login from './pages/Login';
 import PrivateRoute from './components/PrivateRoute';
+import POSSystem from './pages/POSSystem';
+import Customers from './pages/Customers';
 
 function App() {
+  // Get user from localStorage
+  let user = null;
+  try {
+    user = JSON.parse(localStorage.getItem('user'));
+  } catch {}
+  const role = user?.role;
+
   return (
     <Router>
       <Routes>
@@ -22,14 +31,38 @@ function App() {
             <PrivateRoute>
               <MainLayout>
                 <Routes>
-                  <Route path="/" element={<Dashboard />} />
-                  <Route path="/categories" element={<Categories />} />
-                  <Route path="/product" element={<Product />} />
-                  <Route path="/customers" element={<Customers />} />
-                  <Route path="/suppliers" element={<Suppliers />} />
-                  <Route path="/user" element={<User />} />
-                  <Route path="/store" element={<Store />} />
-                  <Route path="/sale_items" element={<SaleItems />} />
+                  {role === 'cashier' ? (
+                    <Route path="/stock-out" element={<POSSystem />} />
+                  ) : role === 'manager' ? (
+                    <>
+                      <Route path="/" element={<Dashboard />} />
+                      <Route path="/categories" element={<Categories />} />
+                      <Route path="/product" element={<Product />} />
+                      <Route path="/customers" element={<Customers />} />
+                      <Route path="/suppliers" element={<Suppliers />} />
+                      <Route path="/store" element={<Store />} />
+                      <Route path="/stock-out" element={<POSSystem />} />
+                      <Route path="/reports" element={<Dashboard />} />
+                    </>
+                  ) : role === 'inventory' ? (
+                    <>
+                      <Route path="/categories" element={<Categories />} />
+                      <Route path="/product" element={<Product />} />
+                      <Route path="/suppliers" element={<Suppliers />} />
+                      <Route path="/store" element={<Store />} />
+                    </>
+                  ) : (
+                    <>
+                      <Route path="/" element={<Dashboard />} />
+                      <Route path="/categories" element={<Categories />} />
+                      <Route path="/product" element={<Product />} />
+                      <Route path="/customers" element={<Customers />} />
+                      <Route path="/suppliers" element={<Suppliers />} />
+                      <Route path="/user" element={<User />} />
+                      <Route path="/store" element={<Store />} />
+                      <Route path="/stock-out" element={<POSSystem />} />
+                    </>
+                  )}
                 </Routes>
               </MainLayout>
             </PrivateRoute>

@@ -1,6 +1,6 @@
 // const API_URL = 'https://ai-powered-pos-system-back-end.onrender.com/api/stores';
 
-const API_URL = 'http://192.168.1.77:5000/api/stores';
+const API_URL = 'http://192.168.1.71:5000/api/stores';
 
 export async function getStores() {
   const res = await fetch(API_URL);

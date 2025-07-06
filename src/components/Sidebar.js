@@ -27,8 +27,83 @@ const navItems = [
 
 function Sidebar({ open, onClose }) {
   const [openDropdown, setOpenDropdown] = useState(null);
+  const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
+
+  // Get user info from localStorage
+  let user = null;
+  try {
+    user = JSON.parse(localStorage.getItem('user'));
+  } catch {}
+  const displayName = user?.full_name || user?.username || user?.email || 'User';
+  const role = user?.role;
+
+  // Filter navItems for cashier, manager, and inventory
+  let filteredNavItems;
+  if (role === 'cashier') {
+    filteredNavItems = navItems.filter(item => item.label === 'Stock Out (Sales)');
+  } else if (role === 'manager') {
+    filteredNavItems = navItems.filter(item =>
+      [
+        'Dashboard',
+        'Store',
+        'Customers',
+        'Suppliers',
+        'Sale Items',
+        'Stock Out (Sales)',
+        'Reports',
+        'Settings'
+      ].includes(item.label)
+    ).map(item => {
+      if (item.label === 'Settings') {
+        // Only allow inventory/product/category-related subitems
+        return {
+          ...item,
+          subItems: item.subItems.filter(sub =>
+            ['Add Categories', 'Add product'].includes(sub.label)
+          )
+        };
+      }
+      return item;
+    });
+  } else if (role === 'inventory') {
+    filteredNavItems = navItems.filter(item =>
+      [
+        'Store',
+        'Suppliers',
+        'Settings'
+      ].includes(item.label)
+    ).map(item => {
+      if (item.label === 'Settings') {
+        // Only allow inventory/product/category-related subitems
+        return {
+          ...item,
+          subItems: item.subItems.filter(sub =>
+            ['Add Categories', 'Add product'].includes(sub.label)
+          )
+        };
+      }
+      return item;
+    });
+  } else {
+    filteredNavItems = navItems;
+  }
+
+  // Handle click outside for profile dropdown
+  React.useEffect(() => {
+    function handleClick(e) {
+      if (!e.target.closest('.profile-dropdown')) {
+        setProfileDropdownOpen(false);
+      }
+    }
+    if (profileDropdownOpen) {
+      document.addEventListener('mousedown', handleClick);
+    } else {
+      document.removeEventListener('mousedown', handleClick);
+    }
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [profileDropdownOpen]);
 
   const toggleDropdown = (label) => {
     setOpenDropdown(openDropdown === label ? null : label);
@@ -120,35 +195,18 @@ function Sidebar({ open, onClose }) {
         </div>
         <nav className="flex-1 overflow-y-auto">
           <ul className="space-y-2">
-            {navItems.map(renderNavItem)}
+            {filteredNavItems.map(renderNavItem)}
           </ul>
         </nav>
-        <button
-          onClick={handleLogout}
-          className="mt-8 w-full flex items-center gap-3 px-3 py-2 rounded-lg font-medium text-red-600 bg-red-50 hover:bg-red-100 transition"
-        >
-          <span className="text-lg">🚪</span>
-          <span>Logout</span>
-        </button>
       </div>
       {/* Desktop sidebar */}
       <aside className="hidden md:flex w-56 bg-white shadow-lg flex-col py-8 px-4 min-h-screen">
         <div className="mb-8 text-2xl font-bold text-purple-700 tracking-wide text-center">AI-Powered POS System</div>
         <nav className="flex-1 overflow-y-auto">
           <ul className="space-y-2">
-            {navItems.map(renderNavItem)}
+            {filteredNavItems.map(renderNavItem)}
           </ul>
         </nav>
-        <div className="flex justify-end items-end mt-auto">
-          <button
-            onClick={handleLogout}
-            className="mb-2 w-11/12 flex items-center gap-3 px-3 py-2 rounded-lg font-medium text-red-600 bg-red-50 hover:bg-red-100 transition justify-end"
-            style={{ alignSelf: 'flex-end' }}
-          >
-            <span className="text-lg">🚪</span>
-            <span>Logout</span>
-          </button>
-        </div>
       </aside>
     </>
   );
