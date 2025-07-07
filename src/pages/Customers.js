@@ -3,9 +3,11 @@ import {
   getCustomers,
   createCustomer,
   updateCustomer,
-  deleteCustomer
+  deleteCustomer,
+  getCustomerInsights
 } from '../services/customerService';
 import { Pencil, Trash2, LayoutGrid, List } from 'lucide-react';
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 
 const Customers = () => {
   const [customers, setCustomers] = useState([]);
@@ -18,27 +20,16 @@ const Customers = () => {
   const [form, setForm] = useState({ full_name: '', email: '', phone: '', tin: '' });
   const [formError, setFormError] = useState('');
   const [viewMode, setViewMode] = useState('table'); // 'table' or 'card'
-
-  // Example AI reorder alerts data (static for now)
-  const reorderAlerts = [
-    {
-      name: 'Lavender Dreams Perfume',
-      current: 3,
-      reorder: 52
-    },
-    {
-      name: 'Rose Gold Luxury Watch',
-      current: 5,
-      reorder: 16
-    }
-  ];
+  const [insights, setInsights] = useState([]);
+  const [insightsLoading, setInsightsLoading] = useState(true);
+  const [insightsError, setInsightsError] = useState('');
 
   // Fetch customers
   const fetchCustomers = async () => {
     setLoading(true);
     try {
-      const data = await getCustomers();
-      setCustomers(data);
+      const customersData = await getCustomers();
+      setCustomers(customersData);
       setError('');
     } catch (err) {
       setError(err.message);
@@ -46,8 +37,22 @@ const Customers = () => {
     setLoading(false);
   };
 
+  // Fetch AI Insights
+  const fetchInsights = async () => {
+    setInsightsLoading(true);
+    try {
+      const data = await getCustomerInsights();
+      setInsights(data);
+      setInsightsError('');
+    } catch (err) {
+      setInsightsError(err.message);
+    }
+    setInsightsLoading(false);
+  };
+
   useEffect(() => {
     fetchCustomers();
+    fetchInsights();
     // eslint-disable-next-line
   }, []);
 
@@ -160,25 +165,6 @@ const Customers = () => {
           </button>
         </div>
       </div>
-      {/* AI Reorder Alerts Panel */}
-      <div className="bg-red-50 border border-red-200 rounded-xl p-4 sm:p-6 mb-4">
-        <div className="flex items-center mb-2">
-          <span className="text-red-500 text-xl mr-2">⚠️</span>
-          <span className="font-semibold text-red-700 text-base">AI Reorder Alerts</span>
-        </div>
-        <div className="text-red-700 text-sm mb-3">
-          {reorderAlerts.length} products need immediate reordering based on AI demand forecasting.
-        </div>
-        <div className="space-y-3">
-          {reorderAlerts.map((alert, idx) => (
-            <div key={idx} className="bg-white border border-red-200 rounded-lg p-3">
-              <div className="font-semibold text-gray-800">{alert.name}</div>
-              <div className="text-gray-600 text-xs">Current: {alert.current} units</div>
-              <div className="text-red-600 text-xs font-medium">Reorder: {alert.reorder} units</div>
-            </div>
-          ))}
-        </div>
-      </div>
       <div className="bg-white rounded-xl shadow p-4 sm:p-6 w-full overflow-x-auto">
         {/* Table/Card Title and View Toggle */}
         <div className="flex items-center justify-between mb-4 gap-2 flex-wrap">
@@ -221,7 +207,7 @@ const Customers = () => {
                     <td className="py-3 px-3">{customer.tin || 'N/A'}</td>
                     <td className="py-3 px-3">{customer.total_purchases != null ? customer.total_purchases : 'N/A'}</td>
                     <td className="py-3 px-3">{customer.total_spent != null ? customer.total_spent : 'N/A'}</td>
-                    <td className="py-3 px-3">{customer.loyalty_points != null ? customer.loyalty_points : 'N/A'}</td>
+                    <td className="py-3 px-3">{customer.total_purchases != null ? Math.floor(customer.total_purchases / 10) : 'N/A'}</td>
                     <td className="py-3 px-3 flex gap-2">
                       <button
                         onClick={() => openModal('edit', customer)}
@@ -256,7 +242,7 @@ const Customers = () => {
                 <div className="text-gray-600 text-sm mb-1">TIN: {customer.tin || 'N/A'}</div>
                 <div className="text-gray-600 text-sm mb-1">Total Purchases: {customer.total_purchases != null ? customer.total_purchases : 'N/A'}</div>
                 <div className="text-gray-600 text-sm mb-1">Total Spent: {customer.total_spent != null ? customer.total_spent : 'N/A'}</div>
-                <div className="text-gray-600 text-sm mb-1">Loyalty Points: {customer.loyalty_points != null ? customer.loyalty_points : 'N/A'}</div>
+                <div className="text-gray-600 text-sm mb-1">Loyalty Points: {customer.total_purchases != null ? Math.floor(customer.total_purchases / 10) : 'N/A'}</div>
                 <div className="flex gap-3 mt-2">
                   <button
                     onClick={() => openModal('edit', customer)}
@@ -272,6 +258,50 @@ const Customers = () => {
                   >
                     <Trash2 size={16} />
                   </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+      {/* AI Insights Section */}
+      <div className="bg-white rounded-xl shadow p-4 sm:p-6 w-full mt-6">
+        <h2 className="text-lg font-semibold text-purple-700 mb-4">AI Insights</h2>
+        {insightsLoading ? (
+          <div>Loading AI insights...</div>
+        ) : insightsError ? (
+          <div className="text-red-600">{insightsError}</div>
+        ) : (
+          <div className="space-y-6">
+            {insights.map(insight => (
+              <div key={insight.customer_id} className="border rounded-lg p-4 mb-2">
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 mb-2">
+                  <div>
+                    <span className="font-bold text-purple-700">{insight.full_name}</span>
+                    <span className="ml-2 px-2 py-1 rounded text-xs bg-purple-100 text-purple-700">{insight.segment}</span>
+                  </div>
+                  {insight.anomaly && (
+                    <span className="text-red-600 font-semibold">⚠ {insight.anomaly}</span>
+                  )}
+                </div>
+                <div className="flex flex-col md:flex-row gap-4 items-start md:items-center">
+                  <div>
+                    <div className="text-sm text-gray-600">Total Spent: <span className="font-semibold">${insight.totalSpent.toFixed(2)}</span></div>
+                    <div className="text-sm text-gray-600">Loyalty Points: <span className="font-semibold">{insight.loyaltyPoints}</span></div>
+                    <div className="text-sm text-gray-600">Recommendations: <span className="font-semibold">{insight.recommendations.join(', ')}</span></div>
+                  </div>
+                  <div className="flex-1 min-w-[200px]">
+                    <ResponsiveContainer width="100%" height={120}>
+                      <LineChart data={Object.entries(insight.trend).map(([month, value]) => ({ month, value }))}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="month" fontSize={12} />
+                        <YAxis fontSize={12} />
+                        <Tooltip />
+                        <Line type="monotone" dataKey="value" stroke="#7c3aed" strokeWidth={2} dot={false} />
+                      </LineChart>
+                    </ResponsiveContainer>
+                    <div className="text-xs text-gray-400 text-center">Spending Trend</div>
+                  </div>
                 </div>
               </div>
             ))}

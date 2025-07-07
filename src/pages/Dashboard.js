@@ -11,8 +11,6 @@ function Dashboard() {
   const [inventory, setInventory] = useState([]);
   const [recentActivity, setRecentActivity] = useState([]);
   const [salesData, setSalesData] = useState([]);
-  const [demandForecastData, setDemandForecastData] = useState([]);
-  const [customerInsightsData, setCustomerInsightsData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -24,62 +22,25 @@ function Dashboard() {
         setLoading(true);
         
         // Fetch all dashboard data in parallel
-        const [salesStats, dailySales, inventoryData, recentSales, customers] = await Promise.all([
+        const [statsData, inventoryData, customers, dailySales, recentSales] = await Promise.all([
           getSalesStats(),
-          getDailySales(),
           getInventoryData(),
+          getCustomers(),
+          getDailySales(),
           getRecentSales(),
-          getCustomers()
         ]);
 
-        // Process sales statistics
-        const processedStats = [
-          { label: 'Sales Today', value: `$${salesStats.todaySales.toFixed(2)}`, icon: '💰' },
-          { label: 'Total Customers', value: salesStats.totalCustomers, icon: '🧑‍🤝‍🧑' },
-          { label: 'Inventory Value', value: `$${salesStats.inventoryValue.toFixed(2)}`, icon: '📦' },
-          { label: 'Low Stock', value: salesStats.lowStockCount, icon: '⚠️' },
-          { label: 'AI Forecast', value: salesStats.bestSeller, icon: '🤖' },
-        ];
-
-        // Process inventory data
-        const processedInventory = inventoryData.map(item => ({
-          name: item.name,
-          category: item.category_name || 'Uncategorized',
-          quantity: item.quantity,
-          price: parseFloat(item.price),
-          status: item.status
-        }));
-
-        // Process recent activity from recent sales
-        const processedActivity = recentSales.slice(0, 4).map(sale => 
-          `Processed sale: ${sale.sale_number} - $${parseFloat(sale.total_amount).toFixed(2)}`
-        );
-
-        // Add some placeholder activities if not enough sales
-        while (processedActivity.length < 4) {
-          processedActivity.push('No recent activity');
-        }
-
-        // Process customer insights
-        const returningCustomers = Math.floor(customers.length * 0.7); // 70% returning customers
-        const newCustomers = customers.length - returningCustomers;
-        const processedCustomerInsights = [
-          { name: 'Returning', value: returningCustomers },
-          { name: 'New', value: newCustomers },
-        ];
-
-        // Simple demand forecast based on inventory levels
-        const processedDemandForecast = inventoryData.slice(0, 4).map(item => ({
-          name: item.name,
-          forecast: Math.floor(Math.random() * 50) + 20 // Random forecast for demo
-        }));
-
-        setStats(processedStats);
-        setInventory(processedInventory);
-        setRecentActivity(processedActivity);
+        // Transform statsData object into an array for rendering
+        setStats([
+          { label: "Today's Sales", value: `$${statsData.todaySales}`, icon: "💰" },
+          { label: "Total Customers", value: statsData.totalCustomers, icon: "🧑‍🤝‍🧑" },
+          { label: "Inventory Value", value: `$${statsData.inventoryValue}`, icon: "📦" },
+          { label: "Low Stock Items", value: statsData.lowStockCount, icon: "⚠️" },
+          { label: "Best Seller", value: statsData.bestSeller, icon: "🏆" }
+        ]);
+        setInventory(inventoryData);
+        setRecentActivity(recentSales.map(sale => `Sale #${sale.sale_number} - $${sale.total_amount}`));
         setSalesData(dailySales);
-        setDemandForecastData(processedDemandForecast);
-        setCustomerInsightsData(processedCustomerInsights);
 
       } catch (err) {
         console.error('Error fetching dashboard data:', err);
@@ -207,45 +168,6 @@ function Dashboard() {
             </ResponsiveContainer>
           </div>
         </div>
-        {/* AI Demand Forecast */}
-        <div className="bg-white rounded-xl shadow p-4 sm:p-6 flex flex-col items-center w-full">
-          <h3 className="font-semibold mb-2 text-sm sm:text-base">AI Demand Forecast</h3>
-          <div className="w-full h-48 sm:h-40">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={demandForecastData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" />
-                <YAxis />
-                <Tooltip />
-                <Bar dataKey="forecast" fill="#38bdf8" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-        {/* Customer Insights Pie Chart */}
-        <div className="bg-white rounded-xl shadow p-4 sm:p-6 flex flex-col items-center w-full">
-          <h3 className="font-semibold mb-2 text-sm sm:text-base">Customer Insights</h3>
-          <div className="w-full h-32 sm:h-40 md:h-48 flex items-center justify-center">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={customerInsightsData}
-                  dataKey="value"
-                  nameKey="name"
-                  cx="50%"
-                  cy="50%"
-                  outerRadius="70%"
-                  label
-                >
-                  {customerInsightsData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Legend />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
       </div>
 
       {/* Business Intelligence Panel */}
@@ -264,16 +186,6 @@ function Dashboard() {
             <span className="text-lg sm:text-2xl font-bold text-green-700 mb-1 sm:mb-2">{stats[1]?.value || 0}</span>
             <span className="text-gray-600 text-xs sm:text-base">Total Customers</span>
           </div>
-        </div>
-      </div>
-
-      {/* Placeholders for future features */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-6 mb-4 sm:mb-6 w-full flex-shrink-0">
-        <div className="bg-white rounded-xl shadow p-4 sm:p-6 flex flex-col items-center justify-center min-h-[100px] sm:min-h-[120px] text-gray-400 w-full">
-          <span className="text-xs sm:text-lg">[Barcode Generation Panel Placeholder]</span>
-        </div>
-        <div className="bg-white rounded-xl shadow p-4 sm:p-6 flex flex-col items-center justify-center min-h-[100px] sm:min-h-[120px] text-gray-400 w-full">
-          <span className="text-xs sm:text-lg">[AI-powered Recommendations Placeholder]</span>
         </div>
       </div>
     </div>

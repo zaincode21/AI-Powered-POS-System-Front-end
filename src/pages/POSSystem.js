@@ -22,6 +22,7 @@ const POSSystem = () => {
   const [showCheckout, setShowCheckout] = useState(false);
   const [categories, setCategories] = useState([]);
   const [categoriesError, setCategoriesError] = useState('');
+  const [walkInCount, setWalkInCount] = useState(1);
 
   const taxRate = 0.08; // 8% tax
 
@@ -29,6 +30,10 @@ const POSSystem = () => {
   const userObj = JSON.parse(localStorage.getItem('user'));
   const userId = userObj?.id || localStorage.getItem('user_id');
   const storeId = userObj?.store_id || localStorage.getItem('store_id');
+
+  if (!userId) {
+    console.warn('No userId found in localStorage! Sale submissions will fail.');
+  }
 
   const filteredProducts = products.filter(product => {
     const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase());
@@ -103,6 +108,10 @@ const POSSystem = () => {
 
   // Function to send sale to backend
   const sendSaleToBackend = async (transaction) => {
+    if (!userId) {
+      alert('User ID is missing. Please log in again.');
+      return null;
+    }
     try {
       // Prepare customer object (add more fields as needed)
       const customer = {
@@ -123,6 +132,8 @@ const POSSystem = () => {
         user_id: userId,
         store_id: storeId
       };
+      // Debug log
+      console.log('Submitting sale with user_id:', userId, 'store_id:', storeId, 'sale:', sale);
       // Prepare items array
       const items = transaction.items.map(item => ({
         product_id: item.id,
@@ -287,8 +298,8 @@ const POSSystem = () => {
                 value={selectedCategory}
                 onChange={(e) => setSelectedCategory(e.target.value)}
               >
-                {categories.map(category => (
-                  <option key={category._id} value={category._id}>{category.name}</option>
+                {categories.map((category, idx) => (
+                  <option key={category._id || idx} value={category._id}>{category.name}</option>
                 ))}
               </select>
               {categoriesError && (
@@ -498,14 +509,20 @@ const POSSystem = () => {
                 <div className="flex gap-1">
                   <button
                     type="button"
-                    onClick={() => setCustomerInfo({ full_name: 'Walk-in Customer', email: '', phone: '', tin: '' })}
+                    onClick={() => {
+                      setCustomerInfo({ full_name: 'Walk-in Customer', email: `cust${walkInCount}@gmail.com`, phone: '', tin: '' });
+                      setWalkInCount(prev => prev + 1);
+                    }}
                     className="px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded hover:bg-blue-200"
                   >
                     Walk-in
                   </button>
                   <button
                     type="button"
-                    onClick={() => setCustomerInfo({ full_name: '', email: '', phone: '', tin: '' })}
+                    onClick={() => {
+                      setCustomerInfo({ full_name: '', email: `cust${walkInCount}@gmail.com`, phone: '', tin: '' });
+                      setWalkInCount(prev => prev + 1);
+                    }}
                     className="px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
                   >
                     Clear

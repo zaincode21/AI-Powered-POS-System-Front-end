@@ -1,5 +1,5 @@
 // Function to submit a sale with customer info and items
-const API_URL = 'http://192.168.1.71:5000/api/sales';
+const API_URL = 'http://192.168.1.77:5000/api/sales';
 
 const res = await fetch(API_URL);
 export const submitSale = async ({ customer, sale, items }) => {

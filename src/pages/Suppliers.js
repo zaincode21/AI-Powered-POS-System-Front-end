@@ -138,20 +138,6 @@ function Suppliers() {
     setFormData({ name: '', contact_person: '', email: '', phone: '', address: '', payment_terms: '', is_active: true });
   };
 
-  // Example AI reorder alerts data
-  const reorderAlerts = [
-    {
-      name: 'Lavender Dreams Perfume',
-      current: 3,
-      reorder: 52
-    },
-    {
-      name: 'Rose Gold Luxury Watch',
-      current: 5,
-      reorder: 16
-    }
-  ];
-
   if (loading) {
     return (
       <div className="flex flex-col flex-1 w-full min-h-screen p-0 sm:p-2 md:p-4 lg:p-6">
@@ -200,26 +186,6 @@ function Suppliers() {
         <p className="text-gray-600 text-sm sm:text-base">
           Manage your suppliers and their information.
         </p>
-      </div>
-
-      {/* AI Reorder Alerts Panel */}
-      <div className="bg-red-50 border border-red-200 rounded-xl p-4 sm:p-6 mb-4">
-        <div className="flex items-center mb-2">
-          <span className="text-red-500 text-xl mr-2">⚠️</span>
-          <span className="font-semibold text-red-700 text-base">AI Reorder Alerts</span>
-        </div>
-        <div className="text-red-700 text-sm mb-3">
-          {reorderAlerts.length} products need immediate reordering based on AI demand forecasting.
-        </div>
-        <div className="space-y-3">
-          {reorderAlerts.map((alert, idx) => (
-            <div key={idx} className="bg-white border border-red-200 rounded-lg p-3">
-              <div className="font-semibold text-gray-800">{alert.name}</div>
-              <div className="text-gray-600 text-xs">Current: {alert.current} units</div>
-              <div className="text-red-600 text-xs font-medium">Reorder: {alert.reorder} units</div>
-            </div>
-          ))}
-        </div>
       </div>
 
       {/* Suppliers List - Table for sm+ */}

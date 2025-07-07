@@ -1,4 +1,4 @@
-const API_URL = 'http://192.168.1.71:5000/api/customers';
+const API_URL = 'http://192.168.1.77:5000/api/customers';
 
 export const getCustomers = async () => {
   const res = await fetch(API_URL);
@@ -45,5 +45,11 @@ export const updateCustomer = async (id, data) => {
 export const deleteCustomer = async (id) => {
   const res = await fetch(`${API_URL}/${id}`, { method: 'DELETE' });
   if (!res.ok) throw new Error('Failed to delete customer');
+  return res.json();
+};
+
+export const getCustomerInsights = async () => {
+  const res = await fetch(`${API_URL}/insights`);
+  if (!res.ok) throw new Error('Failed to fetch customer insights');
   return res.json();
 }; 

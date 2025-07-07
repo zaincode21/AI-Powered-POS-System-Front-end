@@ -3,15 +3,14 @@ import MainLayout from './layouts/MainLayout';
 import Dashboard from './pages/Dashboard';
 import Categories from './pages/Categories';
 import Product from './pages/Product';
-
 import Suppliers from './pages/Suppliers';
 import User from './pages/User';
 import Store from './pages/Store';
-
 import Login from './pages/Login';
 import PrivateRoute from './components/PrivateRoute';
 import POSSystem from './pages/POSSystem';
 import Customers from './pages/Customers';
+import Reports from './pages/Reports';
 
 function App() {
   // Get user from localStorage
@@ -42,7 +41,7 @@ function App() {
                       <Route path="/suppliers" element={<Suppliers />} />
                       <Route path="/store" element={<Store />} />
                       <Route path="/stock-out" element={<POSSystem />} />
-                      <Route path="/reports" element={<Dashboard />} />
+                      <Route path="/reports" element={<Reports />} />
                     </>
                   ) : role === 'inventory' ? (
                     <>

@@ -24,20 +24,6 @@ function Store() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Example AI reorder alerts data
-  const reorderAlerts = [
-    {
-      name: 'Lavender Dreams Perfume',
-      current: 3,
-      reorder: 52
-    },
-    {
-      name: 'Rose Gold Luxury Watch',
-      current: 5,
-      reorder: 16
-    }
-  ];
-
   // List of common IANA timezones
   const timezones = [
     'UTC', 'Africa/Cairo', 'Africa/Johannesburg', 'America/Chicago', 'America/Denver', 'America/Los_Angeles',
@@ -198,25 +184,6 @@ function Store() {
           {message}
         </div>
       )}
-      {/* AI Reorder Alerts Panel */}
-      <div className="bg-red-50 border border-red-200 rounded-xl p-4 sm:p-6 mb-4">
-        <div className="flex items-center mb-2">
-          <span className="text-red-500 text-xl mr-2">⚠️</span>
-          <span className="font-semibold text-red-700 text-base">AI Reorder Alerts</span>
-        </div>
-        <div className="text-red-700 text-sm mb-3">
-          {reorderAlerts.length} products need immediate reordering based on AI demand forecasting.
-        </div>
-        <div className="space-y-3">
-          {reorderAlerts.map((alert, idx) => (
-            <div key={idx} className="bg-white border border-red-200 rounded-lg p-3">
-              <div className="font-semibold text-gray-800">{alert.name}</div>
-              <div className="text-gray-600 text-xs">Current: {alert.current} units</div>
-              <div className="text-red-600 text-xs font-medium">Reorder: {alert.reorder} units</div>
-            </div>
-          ))}
-        </div>
-      </div>
       {/* Header */}
       <div className="bg-white rounded-xl shadow p-4 sm:p-6 w-full">
         <div className="flex flex-col sm:flex-row items-center justify-between mb-4 sm:mb-6 gap-2 sm:gap-0">
