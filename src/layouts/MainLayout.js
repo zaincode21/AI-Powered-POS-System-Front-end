@@ -41,7 +41,15 @@ function MainLayout({ children }) {
       {/* Sticky, modern header */}
       <header className="sticky top-0 left-0 right-0 z-40 bg-white shadow-sm flex items-center justify-between px-4 md:px-8 h-16">
         <div className="flex items-center gap-2">
-          <span className="font-extrabold text-xl md:text-2xl text-purple-700 tracking-tight select-none">AI-Powered POS</span>
+          {/* Hamburger for mobile */}
+          <button
+            className="md:hidden text-2xl text-purple-700 mr-2"
+            onClick={() => setSidebarOpen(true)}
+            aria-label="Open sidebar"
+          >
+            &#9776;
+          </button>
+          <span className="font-extrabold text-xl md:text-2xl text-purple-700 tracking-tight select-none">POS</span>
         </div>
         <div className="profile-dropdown relative flex items-center ml-auto">
           <button

@@ -46,10 +46,4 @@ export const deleteCustomer = async (id) => {
   const res = await fetch(`${API_URL}/${id}`, { method: 'DELETE' });
   if (!res.ok) throw new Error('Failed to delete customer');
   return res.json();
-};
-
-export const getCustomerInsights = async () => {
-  const res = await fetch(`${API_URL}/insights`);
-  if (!res.ok) throw new Error('Failed to fetch customer insights');
-  return res.json();
 }; 

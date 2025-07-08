@@ -3,11 +3,9 @@ import {
   getCustomers,
   createCustomer,
   updateCustomer,
-  deleteCustomer,
-  getCustomerInsights
+  deleteCustomer
 } from '../services/customerService';
 import { Pencil, Trash2, LayoutGrid, List } from 'lucide-react';
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 
 const Customers = () => {
   const [customers, setCustomers] = useState([]);
@@ -20,9 +18,6 @@ const Customers = () => {
   const [form, setForm] = useState({ full_name: '', email: '', phone: '', tin: '' });
   const [formError, setFormError] = useState('');
   const [viewMode, setViewMode] = useState('table'); // 'table' or 'card'
-  const [insights, setInsights] = useState([]);
-  const [insightsLoading, setInsightsLoading] = useState(true);
-  const [insightsError, setInsightsError] = useState('');
 
   // Fetch customers
   const fetchCustomers = async () => {
@@ -37,22 +32,8 @@ const Customers = () => {
     setLoading(false);
   };
 
-  // Fetch AI Insights
-  const fetchInsights = async () => {
-    setInsightsLoading(true);
-    try {
-      const data = await getCustomerInsights();
-      setInsights(data);
-      setInsightsError('');
-    } catch (err) {
-      setInsightsError(err.message);
-    }
-    setInsightsLoading(false);
-  };
-
   useEffect(() => {
     fetchCustomers();
-    fetchInsights();
     // eslint-disable-next-line
   }, []);
 
@@ -258,50 +239,6 @@ const Customers = () => {
                   >
                     <Trash2 size={16} />
                   </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-      {/* AI Insights Section */}
-      <div className="bg-white rounded-xl shadow p-4 sm:p-6 w-full mt-6">
-        <h2 className="text-lg font-semibold text-purple-700 mb-4">AI Insights</h2>
-        {insightsLoading ? (
-          <div>Loading AI insights...</div>
-        ) : insightsError ? (
-          <div className="text-red-600">{insightsError}</div>
-        ) : (
-          <div className="space-y-6">
-            {insights.map(insight => (
-              <div key={insight.customer_id} className="border rounded-lg p-4 mb-2">
-                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 mb-2">
-                  <div>
-                    <span className="font-bold text-purple-700">{insight.full_name}</span>
-                    <span className="ml-2 px-2 py-1 rounded text-xs bg-purple-100 text-purple-700">{insight.segment}</span>
-                  </div>
-                  {insight.anomaly && (
-                    <span className="text-red-600 font-semibold">⚠ {insight.anomaly}</span>
-                  )}
-                </div>
-                <div className="flex flex-col md:flex-row gap-4 items-start md:items-center">
-                  <div>
-                    <div className="text-sm text-gray-600">Total Spent: <span className="font-semibold">${insight.totalSpent.toFixed(2)}</span></div>
-                    <div className="text-sm text-gray-600">Loyalty Points: <span className="font-semibold">{insight.loyaltyPoints}</span></div>
-                    <div className="text-sm text-gray-600">Recommendations: <span className="font-semibold">{insight.recommendations.join(', ')}</span></div>
-                  </div>
-                  <div className="flex-1 min-w-[200px]">
-                    <ResponsiveContainer width="100%" height={120}>
-                      <LineChart data={Object.entries(insight.trend).map(([month, value]) => ({ month, value }))}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="month" fontSize={12} />
-                        <YAxis fontSize={12} />
-                        <Tooltip />
-                        <Line type="monotone" dataKey="value" stroke="#7c3aed" strokeWidth={2} dot={false} />
-                      </LineChart>
-                    </ResponsiveContainer>
-                    <div className="text-xs text-gray-400 text-center">Spending Trend</div>
-                  </div>
                 </div>
               </div>
             ))}

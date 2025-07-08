@@ -7,9 +7,9 @@ const navItems = [
   { label: 'Customers', icon: '🧑‍🤝‍🧑', path: '/customers' },
   { label: 'Suppliers', icon: '🚚', path: '/suppliers' },
   { label: 'User', icon: '👥', path: '/user' },
-  { label: 'Sale Items', icon: '➕', path: '/sale_items' },
+  { label: 'Sales', icon: '➕', path: '/sales' },
   { label: 'Stock Out (Sales)', icon: '➖', path: '/stock-out' },
-  { label: 'Reports', icon: '📊', path: '/reports' },
+  { label: 'Reports', icon: '📊', path: '/report' },
   { 
     label: 'Settings', 
     icon: '⚙️',
@@ -36,7 +36,6 @@ function Sidebar({ open, onClose }) {
   try {
     user = JSON.parse(localStorage.getItem('user'));
   } catch {}
-  const displayName = user?.full_name || user?.username || user?.email || 'User';
   const role = user?.role;
 
   // Filter navItems for cashier, manager, and inventory
@@ -114,13 +113,6 @@ function Sidebar({ open, onClose }) {
     if (open) {
       onClose(); // Close mobile sidebar after navigation
     }
-  };
-
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    navigate('/login');
-    if (open) onClose();
   };
 
   const renderNavItem = (item) => {
@@ -201,7 +193,7 @@ function Sidebar({ open, onClose }) {
       </div>
       {/* Desktop sidebar */}
       <aside className="hidden md:flex w-56 bg-white shadow-lg flex-col py-8 px-4 min-h-screen">
-        <div className="mb-8 text-2xl font-bold text-purple-700 tracking-wide text-center">AI-Powered POS System</div>
+        <div className="mb-8 text-2xl font-bold text-purple-700 tracking-wide text-center">POS System</div>
         <nav className="flex-1 overflow-y-auto">
           <ul className="space-y-2">
             {filteredNavItems.map(renderNavItem)}

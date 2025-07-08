@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from 'recharts';
 import { getSalesStats, getDailySales, getRecentSales } from '../services/saleService';
 import { getInventoryData } from '../services/productService';
-import { getCustomers } from '../services/customerService';
 
 function Dashboard() {
   const [stats, setStats] = useState([]);
@@ -14,18 +13,15 @@ function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const COLORS = ['#7c3aed', '#38bdf8'];
-
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
         setLoading(true);
         
         // Fetch all dashboard data in parallel
-        const [statsData, inventoryData, customers, dailySales, recentSales] = await Promise.all([
+        const [statsData, inventoryData, dailySales, recentSales] = await Promise.all([
           getSalesStats(),
           getInventoryData(),
-          getCustomers(),
           getDailySales(),
           getRecentSales(),
         ]);

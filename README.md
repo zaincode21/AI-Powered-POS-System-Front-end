@@ -1,27 +1,24 @@
-# AI-Powered POS System
+# POS System
 
 ## Project Plan
 
 ### 1. Requirements Gathering
 - Identify user roles: Admin, Cashier, Manager, Customer
-- Define core features: Inventory, Sales, Reporting, AI Insights, User Management
+- Define core features: Inventory, Sales, Reporting, User Management
 
 ### 2. System Design
 - Design database schema (e.g., MongoDB)
 - Define RESTful API endpoints
-- Plan AI integration (e.g., sales prediction, recommendations)
 
 ### 3. Backend Development
 - Set up Node.js/Express server
 - Implement authentication & authorization
 - Develop CRUD APIs for all entities
-- Integrate AI/ML models (Python microservice or Node.js ML libraries)
 
 ### 4. Frontend Development
 - Set up React app with routing
 - Build UI components for all features
 - Integrate with backend APIs
-- Display AI-driven insights
 
 ### 5. Testing
 - Unit and integration tests for backend and frontend
@@ -53,11 +50,10 @@
 4. Supplier & Category Management
 5. Store Management (multi-store support)
 6. Customer Management
-7. AI-Powered Sales Prediction & Product Recommendations
-8. Reporting & Analytics Dashboard
-9. Responsive UI for Desktop & Tablet
-10. Export/Import Data (CSV, PDF)
-11. Notifications & Alerts
+7. Reporting & Analytics Dashboard
+8. Responsive UI for Desktop & Tablet
+9. Export/Import Data (CSV, PDF)
+10. Notifications & Alerts
 
 ---
 

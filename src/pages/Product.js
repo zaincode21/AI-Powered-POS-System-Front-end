@@ -393,9 +393,11 @@ function Product() {
       {/* Product List - Table for sm+ */}
       <div className="bg-white rounded-xl shadow p-4 sm:p-6 w-full">
         <div className="overflow-x-auto hidden sm:block">
+          <h2 className="text-lg font-bold text-gray-800 mb-3">Product List</h2>
           <table className="min-w-full text-xs sm:text-sm">
             <thead>
               <tr className="text-left text-gray-500 border-b">
+                <th className="py-3 px-3 font-semibold">Product Number</th>
                 <th className="py-3 px-3 font-semibold">Product Name</th>
                 <th className="py-3 px-3 font-semibold">Category</th>
                 <th className="py-3 px-3 font-semibold">Supplier</th>
@@ -408,6 +410,7 @@ function Product() {
             <tbody>
               {products.map((product) => (
                 <tr key={product.id} className="border-b hover:bg-gray-50">
+                  <td className="py-3 px-3 text-gray-700 font-mono">{product.product_number || '-'}</td>
                   <td className="py-3 px-3 font-medium">{product.name}</td>
                   <td className="py-3 px-3 text-gray-600">
                     {product.category_name || '-'}
@@ -491,6 +494,7 @@ function Product() {
         <div className="block sm:hidden space-y-4">
           {products.map((product) => (
             <div key={product.id} className="border rounded-xl p-4 shadow-sm bg-white">
+              <div className="font-mono text-xs text-purple-700 mb-1">{product.product_number || '-'}</div>
               <div className="font-semibold text-lg text-gray-800 mb-1">{product.name}</div>
               <div className="text-gray-600 text-sm mb-2">Category: {product.category_name || '-'}</div>
               <div className="text-gray-600 text-sm mb-2">Supplier: {product.supplier_name || '-'}</div>

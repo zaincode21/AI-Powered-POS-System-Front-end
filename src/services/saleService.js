@@ -56,4 +56,25 @@ export const getDailySales = async () => {
   } catch (error) {
     throw error;
   }
+};
+
+// Fetch all sales
+export const getSales = async () => {
+  const response = await fetch(API_URL);
+  if (!response.ok) throw new Error('Failed to fetch sales');
+  return response.json();
+};
+
+// Fetch sale items for a given sale ID
+export const getSaleItems = async (saleId) => {
+  const response = await fetch(`${API_URL}/${saleId}/items`);
+  if (!response.ok) throw new Error('Failed to fetch sale items');
+  return response.json();
+};
+
+// Delete a sale by ID
+export const deleteSale = async (saleId) => {
+  const response = await fetch(`${API_URL}/${saleId}`, { method: 'DELETE' });
+  if (!response.ok) throw new Error('Failed to delete sale');
+  return response.json();
 }; 

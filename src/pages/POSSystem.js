@@ -23,6 +23,8 @@ const POSSystem = () => {
   const [categories, setCategories] = useState([]);
   const [categoriesError, setCategoriesError] = useState('');
   const [walkInCount, setWalkInCount] = useState(1);
+  const [outOfStockError, setOutOfStockError] = useState('');
+  const [processingPayment, setProcessingPayment] = useState(false);
 
   const taxRate = 0.08; // 8% tax
 
@@ -42,6 +44,11 @@ const POSSystem = () => {
   });
 
   const addToCart = (product) => {
+    if (product.current_stock <= 0) {
+      setOutOfStockError('Product you select is out of stock');
+      setTimeout(() => setOutOfStockError(''), 3000);
+      return;
+    }
     setCart(prevCart => {
       const existingItem = prevCart.find(item => item.id === product.id);
       if (existingItem) {
@@ -153,8 +160,11 @@ const POSSystem = () => {
   };
 
   const processPayment = async () => {
+    if (processingPayment) return; // Prevent double click
+    setProcessingPayment(true);
     if (paymentMethod === 'cash' && cashReceivedNum < total) {
       alert('Insufficient cash received');
+      setProcessingPayment(false);
       return;
     }
 
@@ -175,6 +185,7 @@ const POSSystem = () => {
 
     // Send to backend
     const backendResult = await sendSaleToBackend(transaction);
+    setProcessingPayment(false);
     if (!backendResult) return; // error already shown
 
     setCurrentTransaction(transaction);
@@ -275,14 +286,14 @@ const POSSystem = () => {
   }, [selectedCategory]);
 
   return (
-    <div className="flex flex-col md:flex-row h-screen bg-gray-100">
+    <div className="flex flex-col h-screen bg-gray-100 md:flex-row">
       {/* Products Section */}
-      <div className="flex-1 p-2 sm:p-4 md:p-6">
+      <div className="w-full md:flex-1 p-2 sm:p-4 md:p-6 order-1 md:order-none">
         <div className="bg-white rounded-lg shadow-sm h-full flex flex-col">
           <div className="p-2 sm:p-4 border-b">
             <h1 className="text-xl sm:text-2xl font-bold text-gray-800 mb-2 sm:mb-4">Point of Sale</h1>
             {/* Search and Filters */}
-            <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 mb-2 sm:mb-4">
+            <div className="flex flex-col gap-2 sm:flex-row sm:gap-4 mb-2 sm:mb-4">
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                 <input
@@ -308,7 +319,7 @@ const POSSystem = () => {
             </div>
             {/* Barcode Scanner */}
             <div className="mb-2 sm:mb-4">
-              <form onSubmit={handleBarcodeSubmit} className="flex gap-2 flex-col sm:flex-row">
+              <form onSubmit={handleBarcodeSubmit} className="flex flex-col gap-2 sm:flex-row">
                 <div className="relative flex-1">
                   <Scan className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                   <input
@@ -341,8 +352,13 @@ const POSSystem = () => {
           </div>
           {/* Products Grid */}
           <div className="p-2 sm:p-4 overflow-y-auto flex-1" style={{ minHeight: 0 }}>
+            {outOfStockError && (
+              <div className="mb-2 text-center text-red-600 font-semibold bg-red-100 border border-red-300 rounded p-2">
+                {outOfStockError}
+              </div>
+            )}
             <div
-              className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-6"
+              className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 sm:gap-6"
             >
               {loadingProducts ? (
                 <div className="col-span-full text-center text-gray-500">Loading products...</div>
@@ -375,7 +391,7 @@ const POSSystem = () => {
         </div>
       </div>
       {/* Cart Section */}
-      <div className="w-full md:w-96 bg-white shadow-2xl md:static fixed bottom-0 left-0 right-0 z-30 max-h-[60vh] md:max-h-none flex flex-col rounded-t-2xl md:rounded-none border-t md:border-t-0 border-gray-200">
+      <div className="w-full md:w-96 bg-white shadow-2xl md:static fixed bottom-0 left-0 right-0 z-30 max-h-[60vh] md:max-h-none flex flex-col rounded-t-2xl md:rounded-none border-t md:border-t-0 border-gray-200 order-2 md:order-none">
         <div className="p-3 sm:p-5 border-b bg-gradient-to-r from-purple-50 to-blue-50 rounded-t-2xl md:rounded-none">
           <div className="flex items-center gap-2">
             <ShoppingCart className="h-5 w-5 text-purple-600" />
@@ -703,12 +719,14 @@ const POSSystem = () => {
             </div>
             <button
               onClick={processPayment}
-              disabled={paymentMethod === 'cash' && cashReceivedNum < total}
+              disabled={processingPayment || (paymentMethod === 'cash' && cashReceivedNum < total)}
               className="w-full bg-green-600 text-white py-3 rounded-lg font-semibold hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
             >
-              {paymentMethod === 'cash' && cashReceivedNum < total 
-                ? `Need ${(total - cashReceivedNum).toFixed(2)} More`
-                : `Complete Payment - ${total.toFixed(2)}`
+              {processingPayment
+                ? 'Processing...'
+                : paymentMethod === 'cash' && cashReceivedNum < total 
+                  ? `Need ${(total - cashReceivedNum).toFixed(2)} More`
+                  : `Complete Payment - ${total.toFixed(2)}`
               }
             </button>
           </div>
