@@ -42,7 +42,8 @@ function Sidebar({ open, onClose }) {
         'Sale Items',
         'Stock Out (Sales)',
         'Reports',
-        'Settings'
+        'Add product', // Ensure Product is visible
+        'Sales'        // Ensure Sales is visible
       ].includes(item.label)
     ).map(item => {
       if (item.label === 'Settings') {

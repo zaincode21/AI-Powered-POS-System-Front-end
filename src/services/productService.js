@@ -1,6 +1,6 @@
-const API_URL = 'https://ai-powered-pos-system-back-end.onrender.com/api/products';
+// const API_URL = 'https://ai-powered-pos-system-back-end.onrender.com/api/products';
 
-// const API_URL = 'http://10.42.0.85:5000/api/products';
+const API_URL = 'http://192.168.1.77:5000/api/products';
 
 export async function getProducts(categoryId) {
   let url = API_URL;

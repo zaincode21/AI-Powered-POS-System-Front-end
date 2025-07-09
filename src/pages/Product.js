@@ -240,55 +240,53 @@ function Product() {
       cost_price: lastCreatedProduct.cost_price
     }));
     const qrValue = `${window.location.origin}/stock-out?product=${productParam}`;
-    const businessName = 'Your Business Name'; // Replace with your real business name or logo
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-        <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md flex flex-col items-center relative animate-fade-in">
-          <div ref={qrPrintRef} className="print-area w-full flex flex-col items-center">
-            <div className="text-2xl font-extrabold text-purple-700 mb-2 tracking-wide">{businessName}</div>
-            <h2 className="text-lg font-bold mb-2">Product QR Code</h2>
-            <QRCodeCanvas value={qrValue} size={180} className="mb-4" />
-            <hr className="w-1/2 my-3 border-gray-300" />
-            <div className="mt-2 text-xl font-semibold text-gray-900">{lastCreatedProduct.name}</div>
-            <div className="mb-2 text-lg text-gray-700 font-medium">Cost: ${Number(lastCreatedProduct.cost_price).toFixed(2)}</div>
-            <div className="text-xs text-gray-500 italic mb-2">Scan this code for product info</div>
+        <div className="bg-white rounded-lg p-2 sm:p-6 max-w-full sm:max-w-md w-full mx-2 sm:mx-4 max-h-[90vh] overflow-y-auto shadow-2xl border">
+          <div className="w-full flex flex-col items-center p-4">
+            <h3 className="text-lg font-semibold mb-2 text-center">Product QR Code</h3>
+            {lastCreatedProduct?.product_number && (
+              <div className="text-xs text-purple-700 font-mono mb-1">{lastCreatedProduct.product_number}</div>
+            )}
+            <div className="text-base font-bold text-gray-800 mb-2">{lastCreatedProduct?.name}</div>
+            {/* Only QR code will be printed */}
+            <div ref={qrPrintRef} className="print-area">
+              <QRCodeCanvas value={qrValue} size={180} className="mb-4 border rounded shadow" />
+            </div>
           </div>
-          <div className="flex gap-3 mt-4 w-full justify-center">
+          <div className="flex gap-2 mt-4 w-full justify-center">
             <button
               ref={closeBtnRef}
               onClick={() => setShowQrModal(false)}
-              className="px-4 py-2 rounded-lg bg-gray-200 text-gray-700 hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="flex-1 py-2 bg-gray-100 text-gray-700 rounded text-sm hover:bg-gray-200"
             >
               Close
             </button>
             <button
               onClick={() => {
-                const printContents = qrPrintRef.current.innerHTML;
+                // Find the canvas inside qrPrintRef
+                const canvas = qrPrintRef.current.querySelector('canvas');
+                if (!canvas) {
+                  alert('QR code not found!');
+                  return;
+                }
+                const dataUrl = canvas.toDataURL('image/png');
                 const printWindow = window.open('', '', 'height=500,width=400');
                 printWindow.document.write('<html><head><title>Print QR Code</title>');
-                printWindow.document.write('<style>\
-                  @media print {\
-                    body { margin: 0; background: #fff; }\
-                    .print-area { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100vw; height: 100vh; font-family: sans-serif; }\
-                    .print-area h2 { font-size: 1.5rem; margin-bottom: 0.5rem; }\
-                    .print-area .text-2xl { font-size: 2rem; margin-bottom: 0.5rem; color: #7c3aed; font-weight: bold; }\
-                    .print-area .text-xl { font-size: 1.25rem; font-weight: 600; }\
-                    .print-area .text-lg { font-size: 1.1rem; font-weight: 500; }\
-                    .print-area .text-xs { font-size: 0.8rem; color: #888; }\
-                  }\
-                </style>');
-                printWindow.document.write('</head><body >');
-                printWindow.document.write('<div class="print-area">' + printContents + '</div>');
+                printWindow.document.write('<style>@media print { body { margin: 0; background: #fff; display: flex; align-items: center; justify-content: center; height: 100vh; } img { display: block; margin: auto; } }</style>');
+                printWindow.document.write('</head><body>');
+                printWindow.document.write('<img src="' + dataUrl + '" style="width:180px;height:180px;"/>');
                 printWindow.document.write('</body></html>');
                 printWindow.document.close();
                 printWindow.focus();
-                printWindow.print();
-                printWindow.close();
+                setTimeout(() => {
+                  printWindow.print();
+                  printWindow.close();
+                }, 400);
               }}
-              className="px-4 py-2 rounded-lg bg-green-600 text-white hover:bg-green-700 flex items-center gap-2 focus:outline-none focus:ring-2 focus:ring-green-500"
+              className="flex-1 py-2 bg-gray-100 text-gray-700 rounded text-sm hover:bg-gray-200"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 9v12h12V9M9 9V3h6v6" /></svg>
-              Print
+              🖨️ Print QR
             </button>
           </div>
         </div>

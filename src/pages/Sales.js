@@ -18,6 +18,13 @@ function Sales() {
   const totalPages = Math.ceil(sales.length / pageSize);
   const paginatedSales = sales.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
+  // Get user role from localStorage
+  let user = null;
+  try {
+    user = JSON.parse(localStorage.getItem('user'));
+  } catch {}
+  const role = user?.role;
+
   useEffect(() => {
     async function fetchSales() {
       setLoading(true);
@@ -179,12 +186,14 @@ function Sales() {
                         >
                           Edit
                         </button>
-                        <button
-                          className="text-red-600 hover:underline"
-                          onClick={() => handleDelete(sale.id)}
-                        >
-                          Delete
-                        </button>
+                        {role !== 'manager' && (
+                          <button
+                            className="text-red-600 hover:underline"
+                            onClick={() => handleDelete(sale.id)}
+                          >
+                            Delete
+                          </button>
+                        )}
                       </td>
                     </tr>
                   ))}
@@ -233,12 +242,14 @@ function Sales() {
                   >
                     Edit
                   </button>
-                  <button
-                    className="flex-1 bg-red-100 text-red-700 py-1 rounded-lg font-medium text-xs hover:bg-red-200 transition"
-                    onClick={() => handleDelete(sale.id)}
-                  >
-                    Delete
-                  </button>
+                  {role !== 'manager' && (
+                    <button
+                      className="flex-1 bg-red-100 text-red-700 py-1 rounded-lg font-medium text-xs hover:bg-red-200 transition"
+                      onClick={() => handleDelete(sale.id)}
+                    >
+                      Delete
+                    </button>
+                  )}
                 </div>
               </div>
             ))}

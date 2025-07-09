@@ -339,9 +339,9 @@ const POSSystem = () => {
       setCategoriesError('');
       try {
         const data = await getCategories();
-        setCategories([{ name: 'All', _id: 'All' }, ...data]);
+        setCategories([{ name: 'All', id: 'All' }, ...data]);
       } catch (err) {
-        setCategories([{ name: 'All', _id: 'All' }]);
+        setCategories([{ name: 'All', id: 'All' }]);
         setCategoriesError('Failed to load categories');
       }
     };
@@ -403,7 +403,7 @@ const POSSystem = () => {
                 onChange={(e) => setSelectedCategory(e.target.value)}
               >
                 {categories.map((category, idx) => (
-                  <option key={category._id || idx} value={category._id}>{category.name}</option>
+                  <option key={category.id || idx} value={category.id}>{category.name}</option>
                 ))}
               </select>
               <button
@@ -510,9 +510,13 @@ const POSSystem = () => {
                     }`}>
                       {product.image || '🛒'}
                     </div>
+                    {/* Product Number */}
+                    {product.product_number && (
+                      <div className="text-xs text-purple-700 font-mono mb-1">{product.product_number}</div>
+                    )}
                     <h3 className="font-semibold text-gray-800 text-sm sm:text-base mb-1 text-center truncate w-full" title={product.name}>{product.name}</h3>
                     <p className="text-purple-600 font-bold text-base sm:text-lg mb-0.5">${product.selling_price?.toFixed ? product.selling_price.toFixed(2) : product.selling_price}</p>
-                    <p className="text-xs text-gray-500 mb-0.5">{product.category_name}</p>
+                    <p className="text-xs text-gray-500 mb-0.5">{product.sku || product.id}</p>
                     <p className="text-xs text-gray-400 font-mono">{product.barcode}</p>
                     {/* Stock status indicator */}
                     <div className={`mt-1 px-2 py-1 rounded-full text-xs font-medium ${
@@ -881,132 +885,127 @@ const POSSystem = () => {
       {/* Receipt Modal */}
       {showReceipt && currentTransaction && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-2 sm:p-6 max-w-full sm:max-w-md w-full mx-2 sm:mx-4 max-h-[90vh] overflow-y-auto">
-            <div className="flex justify-between items-center mb-4">
-              <div className="flex items-center gap-2">
-                <Receipt className="h-5 w-5" />
-                <h3 className="text-lg font-semibold">Transaction Complete</h3>
+          <div className="bg-white rounded-lg p-2 sm:p-6 max-w-full sm:max-w-md w-full mx-2 sm:mx-4 max-h-[90vh] overflow-y-auto shadow-xl border print:shadow-none print:border-none print:max-w-full print:rounded-none">
+            <div ref={el => (window.receiptPrintArea = el)} className="print-area">
+              {/* Store Header */}
+              <div className="text-center border-b pb-2 mb-2">
+                <div className="text-2xl font-extrabold text-purple-700 tracking-wide">Your Store Name</div>
+                <div className="text-sm text-gray-600">123 Main St, City, State 12345</div>
+                <div className="text-sm text-gray-600">(555) 123-4567</div>
               </div>
-              <button onClick={closeReceipt} className="text-gray-500 hover:text-gray-700">
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-            <div className="border-b pb-4 mb-4">
-              <p className="text-sm text-gray-600">Transaction ID: {currentTransaction.id}</p>
-              <p className="text-sm text-gray-600">{currentTransaction.timestamp}</p>
+              {/* Receipt Title */}
+              <div className="text-center mb-2">
+                <div className="text-lg font-bold text-gray-800">SALES RECEIPT</div>
+                <div className="text-xs text-gray-500">Transaction ID: {currentTransaction.id}</div>
+                <div className="text-xs text-gray-500">{currentTransaction.timestamp}</div>
+              </div>
+              {/* Customer Info */}
               {(currentTransaction.customer.full_name || currentTransaction.customer.phone || currentTransaction.customer.tin || currentTransaction.customer.email) && (
-                <div className="mt-3 p-2 bg-gray-50 rounded">
-                  <h5 className="text-sm font-medium text-gray-700 mb-1">Customer Details:</h5>
+                <div className="mb-2 p-2 bg-gray-50 rounded border">
+                  <div className="text-xs text-gray-700 font-semibold mb-1">Customer:</div>
                   {currentTransaction.customer.full_name && (
-                    <p className="text-sm text-gray-600">Name: {currentTransaction.customer.full_name}</p>
+                    <div className="text-xs text-gray-700">{currentTransaction.customer.full_name}</div>
                   )}
                   {currentTransaction.customer.phone && (
-                    <p className="text-sm text-gray-600">Phone: {currentTransaction.customer.phone}</p>
+                    <div className="text-xs text-gray-700">Phone: {currentTransaction.customer.phone}</div>
                   )}
                   {currentTransaction.customer.tin && (
-                    <p className="text-sm text-gray-600">TIN: {currentTransaction.customer.tin}</p>
+                    <div className="text-xs text-gray-700">TIN: {currentTransaction.customer.tin}</div>
                   )}
                   {currentTransaction.customer.email && (
-                    <p className="text-sm text-gray-600">Email: {currentTransaction.customer.email}</p>
+                    <div className="text-xs text-gray-700">Email: {currentTransaction.customer.email}</div>
                   )}
                 </div>
               )}
-            </div>
-            <div className="space-y-2 mb-4">
-              {currentTransaction.items.map(item => (
-                <div key={item.id} className="flex justify-between text-sm">
-                  <span>{item.name} x{item.quantity}</span>
-                  <span>${(item.price * item.quantity).toFixed(2)}</span>
+              {/* Product Table */}
+              <table className="w-full text-xs mb-2 border-t border-b">
+                <thead>
+                  <tr className="text-left text-gray-500 border-b">
+                    <th className="py-1 px-1 font-semibold">Product</th>
+                    <th className="py-1 px-1 font-semibold text-center">Qty</th>
+                    <th className="py-1 px-1 font-semibold text-right">Price</th>
+                    <th className="py-1 px-1 font-semibold text-right">Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {currentTransaction.items.map(item => (
+                    <tr key={item.id} className="border-b last:border-b-0">
+                      <td className="py-1 px-1 text-gray-800">{item.name}</td>
+                      <td className="py-1 px-1 text-center">{item.quantity}</td>
+                      <td className="py-1 px-1 text-right">${
+                        (typeof item.price === 'number' ? item.price : parseFloat(item.price) || 0).toFixed(2)
+                      }</td>
+                      <td className="py-1 px-1 text-right">${
+                        ((typeof item.price === 'number' ? item.price : parseFloat(item.price) || 0) * item.quantity).toFixed(2)
+                      }</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {/* Totals Section */}
+              <div className="mb-2">
+                <div className="flex justify-between text-xs">
+                  <span>Subtotal:</span>
+                  <span>${currentTransaction.subtotal.toFixed(2)}</span>
                 </div>
-              ))}
-            </div>
-            {/* QR Code Section */}
-            <div className="border-t border-b py-4 mb-4 text-center bg-gray-50 rounded">
-              <div className="mb-3">
+                {currentTransaction.discount > 0 && (
+                  <div className="flex justify-between text-xs text-red-600">
+                    <span>Discount:</span>
+                    <span>- ${currentTransaction.discount.toFixed(2)}</span>
+                  </div>
+                )}
+                <div className="flex justify-between text-xs">
+                  <span>Tax:</span>
+                  <span>${currentTransaction.tax.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between text-base font-bold border-t pt-1 mt-1">
+                  <span>Total:</span>
+                  <span>${currentTransaction.total.toFixed(2)}</span>
+                </div>
+              </div>
+              {/* Payment Info */}
+              <div className="mb-2">
+                <div className="flex justify-between text-xs">
+                  <span>Payment Method:</span>
+                  <span>{currentTransaction.paymentMethod === 'card' ? 'Card' : 'Cash'}</span>
+                </div>
+                {currentTransaction.paymentMethod === 'cash' && (
+                  <>
+                    <div className="flex justify-between text-xs">
+                      <span>Cash Received:</span>
+                      <span>${currentTransaction.cashReceived.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between text-xs font-semibold text-green-700">
+                      <span>Change:</span>
+                      <span>${currentTransaction.change.toFixed(2)}</span>
+                    </div>
+                  </>
+                )}
+              </div>
+              {/* QR Code Section */}
+              <div className="text-center my-2">
                 <img 
                   src={getQRCodeURL(generateQRCodeData(currentTransaction))}
                   alt="Transaction QR Code"
                   className="mx-auto border rounded shadow-sm"
-                  style={{ width: '120px', height: '120px' }}
+                  style={{ width: '100px', height: '100px' }}
                 />
+                <div className="text-xxs text-gray-500 mt-1">Scan for digital receipt & more</div>
               </div>
-              <div className="space-y-1">
-                <p className="text-sm font-medium text-gray-800">📱 Scan QR Code for:</p>
-                <div className="text-xs text-gray-600 space-y-0.5">
-                  <p>• Digital receipt & transaction details</p>
-                  <p>• Customer feedback & review</p>
-                  <p>• Return/exchange reference</p>
-                  <p>• Store contact & loyalty program</p>
-                </div>
-              </div>
-              <div className="mt-2 px-3 py-1 bg-blue-100 text-blue-800 text-xs rounded inline-block">
-                Transaction: {currentTransaction.id}
+              {/* Thank You Message */}
+              <div className="text-center mt-2 border-t pt-2">
+                <div className="text-base font-bold text-purple-700">Thank you for your purchase!</div>
+                <div className="text-xs text-gray-500">Please visit again.</div>
               </div>
             </div>
-            <div className="border-t pt-4 space-y-1">
-              <div className="flex justify-between text-sm">
-                <span>Subtotal:</span>
-                <span>${currentTransaction.subtotal.toFixed(2)}</span>
-              </div>
-              {currentTransaction.discount > 0 && (
-                <div className="flex justify-between text-sm text-red-600">
-                  <span>Discount:</span>
-                  <span>-${currentTransaction.discount.toFixed(2)}</span>
-                </div>
-              )}
-              <div className="flex justify-between text-sm">
-                <span>Tax:</span>
-                <span>${currentTransaction.tax.toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between font-bold">
-                <span>Total:</span>
-                <span>${currentTransaction.total.toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between text-sm text-gray-600">
-                <span>Payment:</span>
-                <span>{currentTransaction.paymentMethod === 'card' ? 'Card' : 'Cash'}</span>
-              </div>
-              {currentTransaction.paymentMethod === 'cash' && (
-                <>
-                  <div className="flex justify-between text-sm text-gray-600">
-                    <span>Cash Received:</span>
-                    <span>${currentTransaction.cashReceived.toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between text-sm font-medium text-green-600">
-                    <span>Change:</span>
-                    <span>${currentTransaction.change.toFixed(2)}</span>
-                  </div>
-                </>
-              )}
-            </div>
-            <button
-              onClick={closeReceipt}
-              className="w-full mt-6 bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700"
-            >
-              New Transaction
-            </button>
-            {/* Receipt Actions */}
-            {(currentTransaction.customer.phone || currentTransaction.customer.email) && (
-              <div className="mt-3 flex gap-2">
-                {currentTransaction.customer.phone && (
-                  <button
-                    onClick={() => alert(`SMS receipt sent to ${currentTransaction.customer.phone}`)}
-                    className="flex-1 py-2 bg-green-100 text-green-700 rounded text-sm hover:bg-green-200"
-                  >
-                    📱 Send SMS
-                  </button>
-                )}
-                {currentTransaction.customer.email && (
-                  <button
-                    onClick={() => alert(`Email receipt sent to ${currentTransaction.customer.email}`)}
-                    className="flex-1 py-2 bg-blue-100 text-blue-700 rounded text-sm hover:bg-blue-200"
-                  >
-                    📧 Send Email
-                  </button>
-                )}
-              </div>
-            )}
-            <div className="mt-3 flex gap-2">
+            {/* Actions */}
+            <div className="mt-3 flex gap-2 print:hidden">
+              <button
+                onClick={closeReceipt}
+                className="flex-1 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
+              >
+                New Transaction
+              </button>
               <button
                 onClick={() => window.print()}
                 className="flex-1 py-2 bg-gray-100 text-gray-700 rounded text-sm hover:bg-gray-200"
@@ -1024,15 +1023,6 @@ const POSSystem = () => {
                 📋 Copy QR Data
               </button>
             </div>
-            <button
-              onClick={() => {
-                const qrData = generateQRCodeData(currentTransaction);
-                alert(`QR Code contains:\n\n${JSON.stringify(JSON.parse(qrData), null, 2)}`);
-              }}
-              className="w-full mt-2 py-2 bg-gray-50 text-gray-600 rounded text-xs hover:bg-gray-100"
-            >
-              🔍 View QR Code Data
-            </button>
           </div>
         </div>
       )}
