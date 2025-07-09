@@ -1,4 +1,6 @@
-const API_URL = 'http://192.168.1.71:5000/api/customers';
+const API_URL = 'https://ai-powered-pos-system-back-end.onrender.com/api/categories';
+
+// const API_URL = 'http://10.42.0.85:5000/api/customers';
 
 export const getCustomers = async () => {
   const res = await fetch(API_URL);

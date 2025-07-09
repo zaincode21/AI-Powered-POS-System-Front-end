@@ -5,7 +5,7 @@ import { loginUser } from '../services/userService';
 function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState('inventory');
+  const [role, setRole] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const navigate = useNavigate();
@@ -66,6 +66,7 @@ function Login() {
               onChange={e => setRole(e.target.value)}
               required
             >
+              <option value="" disabled>select role</option>
               <option value="admin">Admin</option>
               <option value="manager">Manager</option>
               <option value="cashier">Cashier</option>

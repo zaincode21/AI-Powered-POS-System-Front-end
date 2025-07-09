@@ -1,6 +1,6 @@
-// const API_URL = 'https://ai-powered-pos-system-back-end.onrender.com/api/suppliers';
+const API_URL = 'https://ai-powered-pos-system-back-end.onrender.com/api/suppliers';
 
-const API_URL = 'http://192.168.1.71:5000/api/suppliers';
+// const API_URL = 'http://10.42.0.85:5000/api/suppliers';
 
 export async function getSuppliers() {
   const res = await fetch(API_URL);

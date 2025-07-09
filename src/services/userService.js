@@ -1,7 +1,9 @@
-// const API_URL = 'https://ai-powered-pos-system-back-end.onrender.com/api/users';
+const API_URL = 'https://ai-powered-pos-system-back-end.onrender.com/api/users';
 
-const API_URL = 'http://192.168.1.71:5000/api/users';
-const AUTH_URL = 'http://192.168.1.71:5000/api/auth';
+const AUTH_URL = 'https://ai-powered-pos-system-back-end.onrender.com/api/auth';
+
+// const API_URL = 'http://10.42.0.85:5000/api/users';
+// const AUTH_URL = 'http://10.42.0.85:5000/api/auth';
 
 
 export async function getUsers() {

@@ -2,6 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { getSales } from '../services/saleService';
 import { getProducts, getPriceHistory } from '../services/productService';
 import { getSuppliers } from '../services/supplierService';
+import { getSalesStats } from '../services/saleService';
+import { getCustomers } from '../services/customerService';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+// Add print styles at the top of the file
+import './ReportsPrint.css';
 
 function Reports() {
   // In a real app, fetch data here
@@ -17,8 +23,37 @@ function Reports() {
   const [suppliersLoading, setSuppliersLoading] = useState(true);
   const [suppliersError, setSuppliersError] = useState(null);
 
+  const [customers, setCustomers] = useState([]);
   const [priceHistory, setPriceHistory] = useState({});
   const [priceHistoryLoading, setPriceHistoryLoading] = useState({});
+  const [stats, setStats] = useState(null);
+  const [statsLoading, setStatsLoading] = useState(true);
+  const [statsError, setStatsError] = useState(null);
+
+  const [salesPage, setSalesPage] = useState(1);
+  const [inventoryPage, setInventoryPage] = useState(1);
+  const [salesStartDate, setSalesStartDate] = useState('');
+  const [salesEndDate, setSalesEndDate] = useState('');
+  const [inventoryCategory, setInventoryCategory] = useState('All');
+  const pageSize = 10;
+  const salesTotalPagesFiltered = Math.ceil(filteredSales.length / pageSize);
+  // Filter products by category
+  const filteredProductsByCategory = inventoryCategory === 'All'
+    ? products
+    : products.filter(product => String(product.category_id) === String(inventoryCategory) || String(product.category) === String(inventoryCategory));
+  const paginatedProducts = filteredProductsByCategory.slice((inventoryPage - 1) * pageSize, inventoryPage * pageSize);
+  const inventoryTotalPagesFiltered = Math.ceil(filteredProductsByCategory.length / pageSize);
+
+  // Filter sales by date range
+  const filteredSalesByDate = filteredSales.filter(sale => {
+    if (!salesStartDate && !salesEndDate) return true;
+    const saleDate = sale.created_at ? new Date(sale.created_at) : null;
+    if (!saleDate) return false;
+    if (salesStartDate && saleDate < new Date(salesStartDate)) return false;
+    if (salesEndDate && saleDate > new Date(salesEndDate + 'T23:59:59')) return false;
+    return true;
+  });
+  const paginatedSales = filteredSalesByDate.slice((salesPage - 1) * pageSize, salesPage * pageSize);
 
   useEffect(() => {
     // Fetch sales
@@ -67,12 +102,110 @@ function Reports() {
       .then(data => setSuppliers(data))
       .catch(err => setSuppliersError(err.message || 'Failed to fetch suppliers'))
       .finally(() => setSuppliersLoading(false));
+    
+    // Fetch customers
+    getCustomers()
+      .then(data => setCustomers(data))
+      .catch(err => {
+        console.error('Failed to fetch customers:', err);
+        // setCustomersError(err.message || 'Failed to fetch customers'); // Removed
+      });
+  }, []);
+
+  useEffect(() => {
+    setStatsLoading(true);
+    getSalesStats()
+      .then(data => setStats(data))
+      .catch(err => setStatsError(err.message || 'Failed to fetch stats'))
+      .finally(() => setStatsLoading(false));
   }, []);
 
   useEffect(() => {
     // Simulate loading
     setLoading(false);
   }, []);
+
+  // Reset to page 1 when filters/data change
+  useEffect(() => { setSalesPage(1); }, [filteredSales, salesStartDate, salesEndDate]);
+  useEffect(() => { setInventoryPage(1); }, [products, inventoryCategory]);
+
+  // Add helper function for CSV export
+  function exportToCSV(data, columns, filename) {
+    const csvRows = [columns.map(col => col.label).join(',')];
+    for (const row of data) {
+      csvRows.push(columns.map(col => {
+        let val = typeof col.value === 'function' ? col.value(row) : row[col.value];
+        if (typeof val === 'string') val = '"' + val.replace(/"/g, '""') + '"';
+        return val;
+      }).join(','));
+    }
+    const csvContent = 'data:text/csv;charset=utf-8,' + csvRows.join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', filename);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+
+  // --- Export to PDF ---
+  const handleExportPDF = () => {
+    const doc = new jsPDF('p', 'pt', 'a4');
+    doc.text('Professional Report', 40, 40);
+    // Sales Table
+    doc.text('Sales', 40, 70);
+    autoTable(doc, {
+      startY: 80,
+      head: [['Customer', 'Products', 'Quantities', 'Date', 'Total']],
+      body: filteredSalesByDate.map(sale => [
+        sale.customer_name || '-',
+        Array.isArray(sale.items) ? sale.items.map(i => i.product_name).join('; ') : '-',
+        Array.isArray(sale.items) ? sale.items.reduce((sum, i) => sum + (i.quantity || 0), 0) : '-',
+        sale.created_at ? new Date(sale.created_at).toLocaleString() : '-',
+        sale.total_amount?.toFixed ? sale.total_amount.toFixed(2) : sale.total_amount
+      ])
+    });
+    let y = doc.lastAutoTable.finalY + 20;
+    doc.text('Inventory', 40, y);
+    autoTable(doc, {
+      startY: y + 10,
+      head: [['Name', 'Category', 'Stock', 'Price', 'Status']],
+      body: filteredProductsByCategory.map(product => [
+        product.name,
+        product.category_name || product.category || '-',
+        product.current_stock || product.stock || 0,
+        product.selling_price || product.price || '-',
+        (() => {
+          const currentStock = product.current_stock || product.stock || 0;
+          if (currentStock <= 0) return 'Out-Stock';
+          if (currentStock <= 40) return 'Low Stock';
+          return 'In Stock';
+        })()
+      ])
+    });
+    y = doc.lastAutoTable.finalY + 20;
+    doc.text('Customers', 40, y);
+    autoTable(doc, {
+      startY: y + 10,
+      head: [['ID', 'Name', 'Email', 'Phone', 'TIN']],
+      body: customers.map(customer => [
+        customer._id,
+        customer.full_name || customer.name,
+        customer.email || '-',
+        customer.phone || '-',
+        customer.tin || '-'
+      ])
+    });
+    y = doc.lastAutoTable.finalY + 20;
+    doc.text('Suppliers', 40, y);
+    autoTable(doc, {
+      startY: y + 10,
+      head: [['ID', 'Name', 'Email', 'Phone']],
+      body: suppliers.map(supplier => [supplier._id, supplier.name, supplier.email || '-', supplier.phone || '-'])
+    });
+    doc.save('report.pdf');
+  };
 
   if (loading) {
     return (
@@ -92,73 +225,53 @@ function Reports() {
 
   return (
     <div className="flex flex-col w-full min-h-screen p-0 sm:p-2 md:p-4 lg:p-6">
+      <h1 className="print-report-title text-2xl font-bold text-gray-800 mb-2" style={{ textAlign: 'center', marginBottom: 32 }}>Professional Report</h1>
       {/* Header */}
-      <div className="mb-6">
+      <div className="mb-6 no-print">
         <h1 className="text-2xl font-bold text-gray-800 mb-2">Reports</h1>
         <p className="text-gray-500">View and analyze your business performance.</p>
       </div>
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-        {/* Placeholder for Summary Cards */}
-        <div key="Total Sales" className="flex flex-col items-center bg-white rounded-lg shadow p-4">
-          <span className="text-3xl mb-2">💰</span>
-          <span className="text-xl font-bold">$12,340</span>
-          <span className="text-gray-500 text-sm text-center">Total Sales</span>
-        </div>
-        <div key="Total Transactions" className="flex flex-col items-center bg-white rounded-lg shadow p-4">
-          <span className="text-3xl mb-2">🧾</span>
-          <span className="text-xl font-bold">234</span>
-          <span className="text-gray-500 text-sm text-center">Total Transactions</span>
-        </div>
-        <div key="Top Product" className="flex flex-col items-center bg-white rounded-lg shadow p-4">
-          <span className="text-3xl mb-2">🏆</span>
-          <span className="text-xl font-bold">Coffee Beans</span>
-          <span className="text-gray-500 text-sm text-center">Top Product</span>
-        </div>
-        <div key="Total Customers" className="flex flex-col items-center bg-white rounded-lg shadow p-4">
-          <span className="text-3xl mb-2">🧑‍🤝‍🧑</span>
-          <span className="text-xl font-bold">120</span>
-          <span className="text-gray-500 text-sm text-center">Total Customers</span>
-        </div>
+        {statsLoading ? (
+          <div className="col-span-4 flex justify-center items-center h-24">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+          </div>
+        ) : statsError ? (
+          <div className="col-span-4 text-center text-red-600">{statsError}</div>
+        ) : stats ? (
+          <>
+            <div className="flex flex-col items-center bg-white rounded-lg shadow p-4">
+              <span className="text-3xl mb-2">💰</span>
+              <span className="text-xl font-bold">${stats.todaySales?.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+              <span className="text-gray-500 text-sm text-center">Today's Sales</span>
+            </div>
+            <div className="flex flex-col items-center bg-white rounded-lg shadow p-4">
+              <span className="text-3xl mb-2">🧑‍🤝‍🧑</span>
+              <span className="text-xl font-bold">{stats.totalCustomers}</span>
+              <span className="text-gray-500 text-sm text-center">Total Customers</span>
+            </div>
+            <div className="flex flex-col items-center bg-white rounded-lg shadow p-4">
+              <span className="text-3xl mb-2">📦</span>
+              <span className="text-xl font-bold">${stats.inventoryValue?.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+              <span className="text-gray-500 text-sm text-center">Inventory Value</span>
+            </div>
+            <div className="flex flex-col items-center bg-white rounded-lg shadow p-4">
+              <span className="text-3xl mb-2">⚠️</span>
+              <span className="text-xl font-bold">{stats.lowStockCount}</span>
+              <span className="text-gray-500 text-sm text-center">Low Stock Items</span>
+            </div>
+            <div className="flex flex-col items-center bg-white rounded-lg shadow p-4">
+              <span className="text-3xl mb-2">🏆</span>
+              <span className="text-xl font-bold">{stats.bestSeller}</span>
+              <span className="text-gray-500 text-sm text-center">Best Seller (30d)</span>
+            </div>
+          </>
+        ) : null}
       </div>
       <div className="border-b-2 border-purple-200 my-8"></div>
-      {/* Sales Report Table */}
-      {/* <div className="bg-white rounded-xl shadow p-4 mb-8">
-        <h2 className="text-lg font-semibold mb-4">Sales Report</h2>
-        <div className="overflow-x-auto">
-          <table className="min-w-full text-sm">
-            <thead className="bg-purple-50">
-              <tr className="text-left text-gray-500 border-b">
-                <th className="py-3 px-3 font-semibold">Date</th>
-                <th className="py-3 px-3 font-semibold">Customer</th>
-                <th className="py-3 px-3 font-semibold">Items</th>
-                <th className="py-3 px-3 font-semibold">Total</th>
-              </tr>
-            </thead>
-            <tbody>
-              {salesLoading ? (
-                <tr><td colSpan={8} className="text-center text-gray-400 py-6">Loading sales...</td></tr>
-              ) : salesError ? (
-                <tr><td colSpan={8} className="text-center text-red-500 py-6">{salesError}</td></tr>
-              ) : filteredSales.length === 0 ? (
-                <tr><td colSpan={8} className="text-center text-gray-400 py-6">No sales data available.</td></tr>
-              ) : (
-                filteredSales.map((sale, idx) => (
-                  <tr key={sale.id || idx} className={idx % 2 === 0 ? 'bg-white' : 'bg-purple-50 hover:bg-purple-100'}>
-                    <td className="border px-3 py-2">{sale.sale_number || sale.id}</td>
-                    <td className="border px-3 py-2">{sale.customer_name || '-'}</td>
-                    <td className="border px-3 py-2">{Array.isArray(sale.items) ? sale.items.map(i => i.product_name).join(', ') : '-'}</td>
-                    <td className="border px-3 py-2">{Array.isArray(sale.items) ? sale.items.reduce((sum, i) => sum + (i.quantity || 0), 0) : '-'}</td>
-                    <td className="border px-3 py-2">{sale.created_at ? new Date(sale.created_at).toLocaleString() : '-'}</td>
-                    <td className="border px-3 py-2">${sale.total_amount?.toFixed ? sale.total_amount.toFixed(2) : sale.total_amount}</td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div> */}
+    
 
       {/* Placeholder for Charts */}
       {/* <div className="bg-white rounded-xl shadow p-4">
@@ -172,6 +285,35 @@ function Reports() {
       <div className="mb-12">
         <h2 className="text-2xl font-bold mb-4 text-purple-700">Sales</h2>
         <div className="bg-white shadow rounded-xl p-4 overflow-x-auto border border-gray-100">
+          <div className="flex flex-col sm:flex-row gap-2 mb-4 items-center justify-between">
+            <div className="flex gap-2 items-center">
+              <label className="text-sm font-medium">Date Range:</label>
+              <input type="date" value={salesStartDate} onChange={e => setSalesStartDate(e.target.value)} className="border rounded px-2 py-1" />
+              <span className="mx-1">to</span>
+              <input type="date" value={salesEndDate} onChange={e => setSalesEndDate(e.target.value)} className="border rounded px-2 py-1" />
+              <button onClick={() => { setSalesStartDate(''); setSalesEndDate(''); }} className="ml-2 px-2 py-1 rounded bg-gray-100 text-gray-700 hover:bg-gray-200 text-xs">Clear</button>
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => exportToCSV(filteredSalesByDate, [
+                  { label: 'Customer', value: 'customer_name' },
+                  { label: 'Products', value: row => Array.isArray(row.items) ? row.items.map(i => i.product_name).join('; ') : '-' },
+                  { label: 'Quantities', value: row => Array.isArray(row.items) ? row.items.reduce((sum, i) => sum + (i.quantity || 0), 0) : '-' },
+                  { label: 'Date', value: row => row.created_at ? new Date(row.created_at).toLocaleString() : '-' },
+                  { label: 'Total', value: row => row.total_amount?.toFixed ? row.total_amount.toFixed(2) : row.total_amount }
+                ], 'sales_report.csv')}
+                className="px-3 py-1 rounded bg-blue-100 text-blue-700 hover:bg-blue-200 text-xs"
+              >Export CSV</button>
+              <button
+                onClick={() => window.print()}
+                className="px-3 py-1 rounded bg-green-100 text-green-700 hover:bg-green-200 text-xs"
+              >Print</button>
+              <button
+                onClick={handleExportPDF}
+                className="px-3 py-1 rounded bg-red-100 text-red-700 hover:bg-red-200 text-xs"
+              >Export PDF</button>
+            </div>
+          </div>
           <table className="min-w-full text-sm">
             <thead className="bg-purple-50">
               <tr>
@@ -184,12 +326,12 @@ function Reports() {
               </tr>
             </thead>
             <tbody>
-              {filteredSales.length === 0 ? (
+              {paginatedSales.length === 0 ? (
                 <tr>
                   <td colSpan={8} className="text-center text-gray-400 py-6">No sales data available.</td>
                 </tr>
               ) : (
-                filteredSales.map((sale, idx) => (
+                paginatedSales.map((sale, idx) => (
                   <tr key={sale.id || idx} className={idx % 2 === 0 ? 'bg-white' : 'bg-purple-50 hover:bg-purple-100'}>
                     {/* <td className="border px-3 py-2">{sale.sale_number || sale.id}</td> */}
                     <td className="border px-3 py-2">{sale.customer_name || '-'}</td>
@@ -202,12 +344,75 @@ function Reports() {
               )}
             </tbody>
           </table>
+          {/* Pagination Controls */}
+          <div className="flex justify-end items-center gap-2 mt-4">
+            <button
+              onClick={() => setSalesPage(p => Math.max(1, p - 1))}
+              disabled={salesPage === 1}
+              className="px-3 py-1 rounded bg-gray-100 text-gray-700 hover:bg-gray-200 disabled:opacity-50"
+            >
+              Previous
+            </button>
+            <span className="text-sm font-medium">
+              Page {salesPage} of {salesTotalPagesFiltered}
+            </span>
+            <button
+              onClick={() => setSalesPage(p => Math.min(salesTotalPagesFiltered, p + 1))}
+              disabled={salesPage === salesTotalPagesFiltered}
+              className="px-3 py-1 rounded bg-gray-100 text-gray-700 hover:bg-gray-200 disabled:opacity-50"
+            >
+              Next
+            </button>
+          </div>
         </div>
       </div>
       {/* In the Inventory table section, update the table structure: */}
       <div className="mb-12">
         <h2 className="text-2xl font-bold mb-4 text-green-700">Inventory</h2>
         <div className="bg-white shadow rounded-xl p-4 overflow-x-auto border border-gray-100">
+          <div className="flex flex-col sm:flex-row gap-2 mb-4 items-center justify-between">
+            <div className="flex gap-2 items-center">
+              <label className="text-sm font-medium">Category:</label>
+              <select value={inventoryCategory} onChange={e => setInventoryCategory(e.target.value)} className="border rounded px-2 py-1">
+                <option value="All">All</option>
+                {Array.isArray(products) && products.map(p => p.category_id && p.category_name ? { id: p.category_id, name: p.category_name } : null)
+                  .filter((cat, idx, arr) => cat && arr.findIndex(c => c && c.id === cat.id) === idx)
+                  .map(cat => (
+                    <option key={cat.id} value={cat.id}>{cat.name}</option>
+                  ))}
+              </select>
+              <button onClick={() => setInventoryCategory('All')} className="ml-2 px-2 py-1 rounded bg-gray-100 text-gray-700 hover:bg-gray-200 text-xs">Clear</button>
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => exportToCSV(filteredProductsByCategory, [
+                  { label: 'Product Name', value: 'name' },
+                  { label: 'Category', value: row => row.category_name || row.category || '-' },
+                  { label: 'Current Stock', value: row => row.current_stock || row.stock || 0 },
+                  { label: 'Current Price', value: row => row.selling_price || row.price || '-' },
+                  { label: 'Stock Status', value: row => {
+                    const currentStock = row.current_stock || row.stock || 0;
+                    if (currentStock <= 0) return 'Out-Stock';
+                    if (currentStock <= 40) return 'Low Stock';
+                    return 'In Stock';
+                  } },
+                  { label: 'Supplier', value: row => row.supplier_name || '-' },
+                  { label: 'Cost Price', value: row => row.cost_price || '-' },
+                  { label: 'Min Stock Level', value: row => row.min_stock_level || 5 },
+                  { label: 'Last Price Change', value: row => {
+                    const productId = row._id || row.id;
+                    const history = priceHistory[productId];
+                    return history && history.created_at ? new Date(history.created_at).toLocaleDateString() : '-';
+                  } }
+                ], 'inventory_report.csv')}
+                className="px-3 py-1 rounded bg-blue-100 text-blue-700 hover:bg-blue-200 text-xs"
+              >Export CSV</button>
+              <button
+                onClick={() => window.print()}
+                className="px-3 py-1 rounded bg-green-100 text-green-700 hover:bg-green-200 text-xs"
+              >Print</button>
+            </div>
+          </div>
           <table className="min-w-full text-sm">
             <thead className="bg-green-50">
               <tr>
@@ -227,10 +432,10 @@ function Reports() {
                 <tr><td colSpan={9} className="text-center text-gray-400 py-6">Loading products...</td></tr>
               ) : productsError ? (
                 <tr><td colSpan={9} className="text-center text-red-500 py-6">{productsError}</td></tr>
-              ) : products.length === 0 ? (
+              ) : paginatedProducts.length === 0 ? (
                 <tr><td colSpan={9} className="text-center text-gray-400 py-6">No product data available.</td></tr>
               ) : (
-                products.map((product, idx) => {
+                paginatedProducts.map((product, idx) => {
                   // Calculate stock status
                   const currentStock = product.current_stock || product.stock || 0;
                   const minStockLevel = product.min_stock_level || 5;
@@ -280,6 +485,26 @@ function Reports() {
               )}
             </tbody>
           </table>
+          {/* Pagination Controls */}
+          <div className="flex justify-end items-center gap-2 mt-4">
+            <button
+              onClick={() => setInventoryPage(p => Math.max(1, p - 1))}
+              disabled={inventoryPage === 1}
+              className="px-3 py-1 rounded bg-gray-100 text-gray-700 hover:bg-gray-200 disabled:opacity-50"
+            >
+              Previous
+            </button>
+            <span className="text-sm font-medium">
+              Page {inventoryPage} of {inventoryTotalPagesFiltered}
+            </span>
+            <button
+              onClick={() => setInventoryPage(p => Math.min(inventoryTotalPagesFiltered, p + 1))}
+              disabled={inventoryPage === inventoryTotalPagesFiltered}
+              className="px-3 py-1 rounded bg-gray-100 text-gray-700 hover:bg-gray-200 disabled:opacity-50"
+            >
+              Next
+            </button>
+          </div>
         </div>
       </div>
       <div className="mb-12">
