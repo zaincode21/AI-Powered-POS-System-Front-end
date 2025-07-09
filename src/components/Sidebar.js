@@ -3,26 +3,16 @@ import { useNavigate, useLocation } from 'react-router-dom';
 
 const navItems = [
   { label: 'Dashboard', icon: '🏠', path: '/' },
+  { label: 'Add Categories', icon: '👥', path: '/categories' },
   { label: 'Store', icon: '➕', path: '/store' },
-  { label: 'Customers', icon: '🧑‍🤝‍🧑', path: '/customers' },
-  { label: 'Suppliers', icon: '🚚', path: '/suppliers' },
   { label: 'User', icon: '👥', path: '/user' },
+  { label: 'Suppliers', icon: '🚚', path: '/suppliers' },
+  { label: 'Customers', icon: '🧑‍🤝‍🧑', path: '/customers' },
   { label: 'Sales', icon: '➕', path: '/sales' },
   { label: 'Stock Out (Sales)', icon: '➖', path: '/stock-out' },
-  { label: 'Reports', icon: '📊', path: '/report' },
-  { 
-    label: 'Settings', 
-    icon: '⚙️',
-    hasDropdown: true,
-    subItems: [
-      { label: 'General Settings', icon: '🔧', path: '/settings/general' },
-      { label: 'Add Categories', icon: '👥', path: '/categories' },
-      { label: 'Add product', icon: '🔒', path: '/product' },
-      { label: 'Backup & Restore', icon: '💾', path: '/settings/backup' },
-      { label: 'System Updates', icon: '🔄', path: '/settings/updates' },
-      { label: 'API Configuration', icon: '🔗', path: '/settings/api' }
-    ]
-  },
+  { label: 'Reports', icon: '📊', path: '/reports' },
+  { label: 'Add product', icon: '🔒', path: '/product' },
+ 
 ];
 
 function Sidebar({ open, onClose }) {

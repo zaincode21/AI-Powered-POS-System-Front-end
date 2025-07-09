@@ -11,7 +11,7 @@ import PrivateRoute from './components/PrivateRoute';
 import POSSystem from './pages/POSSystem';
 import Customers from './pages/Customers';
 import Sales from './pages/Sales';
-import Report from './pages/Report';
+import Reports from './pages/Reports';
 
 function App() {
   // Get user from localStorage
@@ -43,7 +43,7 @@ function App() {
                       <Route path="/store" element={<Store />} />
                       <Route path="/stock-out" element={<POSSystem />} />
                       <Route path="/sales" element={<Sales />} />
-                      <Route path="/report" element={<Report />} />
+                      <Route path="/reports" element={<Reports />} />
                     </>
                   ) : role === 'inventory' ? (
                     <>
@@ -63,7 +63,7 @@ function App() {
                       <Route path="/store" element={<Store />} />
                       <Route path="/stock-out" element={<POSSystem />} />
                       <Route path="/sales" element={<Sales />} />
-                      <Route path="/report" element={<Report />} />
+                      <Route path="/reports" element={<Reports />} />
                     </>
                   )}
                 </Routes>

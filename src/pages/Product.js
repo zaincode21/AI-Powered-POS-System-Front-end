@@ -239,7 +239,7 @@ function Product() {
       selling_price: lastCreatedProduct.selling_price,
       cost_price: lastCreatedProduct.cost_price
     }));
-    const qrValue = `${window.location.origin}/sale_items?product=${productParam}`;
+    const qrValue = `${window.location.origin}/stock-out?product=${productParam}`;
     const businessName = 'Your Business Name'; // Replace with your real business name or logo
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -436,15 +436,19 @@ function Product() {
                     <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
                       !product.is_active
                         ? 'bg-gray-100 text-gray-700'
-                        : product.current_stock <= (product.min_stock_level || 5)
+                        : product.current_stock <= 0
                           ? 'bg-red-100 text-red-700'
-                          : 'bg-green-100 text-green-700'
+                          : product.current_stock <= 40
+                            ? 'bg-yellow-100 text-yellow-700'
+                            : 'bg-green-100 text-green-700'
                     }`}>
                       {!product.is_active
                         ? 'Out of Stock'
-                        : product.current_stock <= (product.min_stock_level || 5)
-                          ? 'Low Stock'
-                          : 'In Stock'}
+                        : product.current_stock <= 0
+                          ? 'Out-Stock'
+                          : product.current_stock <= 40
+                            ? 'Low Stock'
+                            : 'In Stock'}
                     </span>
                   </td>
                   <td className="py-3 px-3">
@@ -509,15 +513,19 @@ function Product() {
                 <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
                   !product.is_active
                     ? 'bg-gray-100 text-gray-700'
-                    : product.current_stock <= (product.min_stock_level || 5)
+                    : product.current_stock <= 0
                       ? 'bg-red-100 text-red-700'
-                      : 'bg-green-100 text-green-700'
+                      : product.current_stock <= 40
+                        ? 'bg-yellow-100 text-yellow-700'
+                        : 'bg-green-100 text-green-700'
                 }`}>
                   {!product.is_active
                     ? 'Out of Stock'
-                    : product.current_stock <= (product.min_stock_level || 5)
-                      ? 'Low Stock'
-                      : 'In Stock'}
+                    : product.current_stock <= 0
+                      ? 'Out-Stock'
+                      : product.current_stock <= 40
+                        ? 'Low Stock'
+                        : 'In Stock'}
                 </span>
               </div>
               <div className="text-gray-800 font-semibold mb-2">

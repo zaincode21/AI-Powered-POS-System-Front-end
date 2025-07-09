@@ -3,8 +3,10 @@ import { ShoppingCart, Search, CreditCard, Trash2, Plus, Minus, Receipt, X, Scan
 import { getProducts } from '../services/productService';
 import { getCategories } from '../services/categoryService';
 import { submitSale } from '../services/saleService';
+import { useLocation } from 'react-router-dom';
 
 const POSSystem = () => {
+  const routerLocation = useLocation();
   const [products, setProducts] = useState([]);
   const [loadingProducts, setLoadingProducts] = useState(true);
   const [productsError, setProductsError] = useState('');
@@ -25,6 +27,7 @@ const POSSystem = () => {
   const [walkInCount, setWalkInCount] = useState(1);
   const [outOfStockError, setOutOfStockError] = useState('');
   const [processingPayment, setProcessingPayment] = useState(false);
+  const [stockAlerts, setStockAlerts] = useState([]);
 
   const taxRate = 0.08; // 8% tax
 
@@ -49,9 +52,16 @@ const POSSystem = () => {
       setTimeout(() => setOutOfStockError(''), 3000);
       return;
     }
+    
     setCart(prevCart => {
       const existingItem = prevCart.find(item => item.id === product.id);
       if (existingItem) {
+        // Check if adding one more would exceed available stock
+        if (existingItem.quantity >= product.current_stock) {
+          setOutOfStockError(`Only ${product.current_stock} units available in stock`);
+          setTimeout(() => setOutOfStockError(''), 3000);
+          return prevCart;
+        }
         return prevCart.map(item =>
           item.id === product.id 
             ? { ...item, quantity: item.quantity + 1 }
@@ -71,7 +81,20 @@ const POSSystem = () => {
       return prevCart.map(item => {
         if (item.id === id) {
           const newQuantity = item.quantity + change;
-          return newQuantity > 0 ? { ...item, quantity: newQuantity } : null;
+          
+          // Prevent negative quantities
+          if (newQuantity <= 0) {
+            return null;
+          }
+          
+          // Prevent exceeding available stock when increasing quantity
+          if (change > 0 && newQuantity > item.current_stock) {
+            setOutOfStockError(`Only ${item.current_stock} units available in stock`);
+            setTimeout(() => setOutOfStockError(''), 3000);
+            return item; // Return unchanged item
+          }
+          
+          return { ...item, quantity: newQuantity };
         }
         return item;
       }).filter(Boolean);
@@ -113,12 +136,34 @@ const POSSystem = () => {
   const cashReceivedNum = parseFloat(cashReceived) || 0;
   const changeAmount = cashReceivedNum - total;
 
+  // Function to validate stock availability
+  const validateStockAvailability = () => {
+    for (const item of cart) {
+      const product = products.find(p => p.id === item.id);
+      if (!product) {
+        alert(`Product ${item.name} not found in current inventory`);
+        return false;
+      }
+      if (product.current_stock < item.quantity) {
+        alert(`Insufficient stock for ${item.name}. Available: ${product.current_stock}, Requested: ${item.quantity}`);
+        return false;
+      }
+    }
+    return true;
+  };
+
   // Function to send sale to backend
   const sendSaleToBackend = async (transaction) => {
     if (!userId) {
       alert('User ID is missing. Please log in again.');
       return null;
     }
+    
+    // Validate stock availability before processing
+    if (!validateStockAvailability()) {
+      return null;
+    }
+    
     try {
       // Prepare customer object (add more fields as needed)
       const customer = {
@@ -188,6 +233,14 @@ const POSSystem = () => {
     setProcessingPayment(false);
     if (!backendResult) return; // error already shown
 
+    // Refresh products to update stock quantities
+    try {
+      const updatedProducts = await getProducts(selectedCategory);
+      setProducts(updatedProducts);
+    } catch (error) {
+      console.error('Failed to refresh products after sale:', error);
+    }
+
     setCurrentTransaction(transaction);
     setShowReceipt(true);
     setShowCheckout(false);
@@ -254,6 +307,27 @@ const POSSystem = () => {
       try {
         const data = await getProducts(categoryId);
         setProducts(data);
+        // Check for ?product= in URL and add to cart if present
+        const params = new URLSearchParams(routerLocation.search);
+        const productParam = params.get('product');
+        if (productParam) {
+          try {
+            const productData = JSON.parse(decodeURIComponent(productParam));
+            // Find the product in the fetched list by id or name
+            let found = null;
+            if (productData.id) {
+              found = data.find(p => String(p.id) === String(productData.id));
+            }
+            if (!found && productData.name) {
+              found = data.find(p => p.name === productData.name);
+            }
+            if (found) {
+              addToCart(found);
+            }
+          } catch (e) {
+            // ignore parse errors
+          }
+        }
       } catch (err) {
         setProductsError('Failed to load products');
       }
@@ -272,7 +346,26 @@ const POSSystem = () => {
       }
     };
     fetchCategories();
-  }, []);
+    
+    // Set up periodic refresh of products to keep stock quantities updated
+    const refreshInterval = setInterval(() => {
+      if (selectedCategory) {
+        getProducts(selectedCategory)
+          .then(data => setProducts(data))
+          .catch(() => console.log('Failed to refresh products'));
+      }
+    }, 30000); // Refresh every 30 seconds
+    
+    return () => clearInterval(refreshInterval);
+  }, [selectedCategory]);
+
+  // Check for low stock items
+  useEffect(() => {
+    const lowStockItems = products.filter(product => 
+      product.current_stock > 0 && product.current_stock <= (product.min_stock_level || 5)
+    );
+    setStockAlerts(lowStockItems);
+  }, [products]);
 
   // Fetch products when category changes
   useEffect(() => {
@@ -313,6 +406,19 @@ const POSSystem = () => {
                   <option key={category._id || idx} value={category._id}>{category.name}</option>
                 ))}
               </select>
+              <button
+                onClick={() => {
+                  setLoadingProducts(true);
+                  getProducts(selectedCategory)
+                    .then(data => setProducts(data))
+                    .catch(() => setProductsError('Failed to refresh products'))
+                    .finally(() => setLoadingProducts(false));
+                }}
+                disabled={loadingProducts}
+                className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base disabled:bg-gray-300 disabled:cursor-not-allowed"
+              >
+                {loadingProducts ? 'Refreshing...' : '🔄 Refresh'}
+              </button>
               {categoriesError && (
                 <div className="text-xs text-red-500 mt-1">{categoriesError}</div>
               )}
@@ -357,6 +463,19 @@ const POSSystem = () => {
                 {outOfStockError}
               </div>
             )}
+            {stockAlerts.length > 0 && (
+              <div className="mb-2 p-2 bg-yellow-50 border border-yellow-300 rounded">
+                <div className="text-yellow-800 font-medium text-sm mb-1">
+                  ⚠️ Low Stock Alert ({stockAlerts.length} items):
+                </div>
+                <div className="text-yellow-700 text-xs">
+                  {stockAlerts.slice(0, 3).map(item => 
+                    `${item.name} (${item.current_stock} left)`
+                  ).join(', ')}
+                  {stockAlerts.length > 3 && ` and ${stockAlerts.length - 3} more...`}
+                </div>
+              </div>
+            )}
             <div
               className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 sm:gap-6"
             >
@@ -370,19 +489,46 @@ const POSSystem = () => {
                 filteredProducts.map(product => (
                   <div
                     key={product.id}
-                    className="bg-white border border-gray-200 rounded-2xl shadow-md hover:shadow-xl transition-shadow duration-200 cursor-pointer flex flex-col items-center p-3 sm:p-5 group focus-within:ring-2 focus-within:ring-purple-500"
+                    className={`bg-white border rounded-2xl shadow-md hover:shadow-xl transition-shadow duration-200 flex flex-col items-center p-3 sm:p-5 group focus-within:ring-2 focus-within:ring-purple-500 ${
+                      product.current_stock <= 0 
+                        ? 'border-red-300 bg-red-50 cursor-not-allowed opacity-60' 
+                        : product.current_stock <= (product.min_stock_level || 5)
+                          ? 'border-yellow-300 bg-yellow-50 cursor-pointer'
+                          : 'border-gray-200 cursor-pointer'
+                    }`}
                     tabIndex={0}
                     aria-label={`Add ${product.name} to cart`}
-                    onClick={() => addToCart(product)}
-                    onKeyPress={e => { if (e.key === 'Enter') addToCart(product); }}
+                    onClick={() => product.current_stock > 0 && addToCart(product)}
+                    onKeyPress={e => { if (e.key === 'Enter' && product.current_stock > 0) addToCart(product); }}
                   >
-                    <div className="w-16 h-16 sm:w-20 sm:h-20 flex items-center justify-center bg-gray-50 rounded-xl mb-2 sm:mb-3 text-4xl sm:text-5xl group-hover:bg-purple-50 transition-colors">
+                    <div className={`w-16 h-16 sm:w-20 sm:h-20 flex items-center justify-center rounded-xl mb-2 sm:mb-3 text-4xl sm:text-5xl transition-colors ${
+                      product.current_stock <= 0 
+                        ? 'bg-red-100 text-red-400' 
+                        : product.current_stock <= (product.min_stock_level || 5)
+                          ? 'bg-yellow-100 text-yellow-600 group-hover:bg-yellow-200'
+                          : 'bg-gray-50 group-hover:bg-purple-50'
+                    }`}>
                       {product.image || '🛒'}
                     </div>
                     <h3 className="font-semibold text-gray-800 text-sm sm:text-base mb-1 text-center truncate w-full" title={product.name}>{product.name}</h3>
                     <p className="text-purple-600 font-bold text-base sm:text-lg mb-0.5">${product.selling_price?.toFixed ? product.selling_price.toFixed(2) : product.selling_price}</p>
                     <p className="text-xs text-gray-500 mb-0.5">{product.category_name}</p>
                     <p className="text-xs text-gray-400 font-mono">{product.barcode}</p>
+                    {/* Stock status indicator */}
+                    <div className={`mt-1 px-2 py-1 rounded-full text-xs font-medium ${
+                      product.current_stock <= 0 
+                        ? 'bg-red-200 text-red-700' 
+                        : product.current_stock <= (product.min_stock_level || 5)
+                          ? 'bg-yellow-200 text-yellow-700'
+                          : 'bg-green-200 text-green-700'
+                    }`}>
+                      {product.current_stock <= 0 
+                        ? 'Out of Stock' 
+                        : product.current_stock <= (product.min_stock_level || 5)
+                          ? `Low Stock (${product.current_stock})`
+                          : `In Stock (${product.current_stock})`
+                      }
+                    </div>
                   </div>
                 ))
               )}

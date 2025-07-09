@@ -1,7 +1,6 @@
 // Function to submit a sale with customer info and items
-const API_URL = 'http://192.168.1.77:5000/api/sales';
+const API_URL = 'http://192.168.1.71:5000/api/sales';
 
-const res = await fetch(API_URL);
 export const submitSale = async ({ customer, sale, items }) => {
   try {
     const response = await fetch(API_URL, {
@@ -11,7 +10,7 @@ export const submitSale = async ({ customer, sale, items }) => {
     });
     if (!response.ok) {
       const err = await response.json();
-      throw new Error(err.error || 'Failed to save sale');
+      throw new Error(err.error || err.details || 'Failed to save sale');
     }
     return await response.json();
   } catch (error) {
@@ -69,6 +68,13 @@ export const getSales = async () => {
 export const getSaleItems = async (saleId) => {
   const response = await fetch(`${API_URL}/${saleId}/items`);
   if (!response.ok) throw new Error('Failed to fetch sale items');
+  return response.json();
+};
+
+// Fetch sale details with items
+export const getSaleDetails = async (saleId) => {
+  const response = await fetch(`${API_URL}/${saleId}`);
+  if (!response.ok) throw new Error('Failed to fetch sale details');
   return response.json();
 };
 
