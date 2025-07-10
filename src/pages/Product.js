@@ -418,7 +418,7 @@ function Product() {
                   </td>
                   <td className="py-3 px-3">
                     <span className={`px-2 py-1 rounded-full text-xs ${
-                      product.current_stock < 40 ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-800'
+                      product.current_stock < 20 ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-800'
                     }`}>
                       {product.current_stock != null && !isNaN(Number(product.current_stock))
                         ? `${product.current_stock} units`
@@ -436,7 +436,7 @@ function Product() {
                         ? 'bg-gray-100 text-gray-700'
                         : product.current_stock <= 0
                           ? 'bg-red-100 text-red-700'
-                          : product.current_stock <= 40
+                          : product.current_stock <= 20
                             ? 'bg-yellow-100 text-yellow-700'
                             : 'bg-green-100 text-green-700'
                     }`}>
@@ -444,7 +444,7 @@ function Product() {
                         ? 'Out of Stock'
                         : product.current_stock <= 0
                           ? 'Out-Stock'
-                          : product.current_stock <= 40
+                          : product.current_stock <= 20
                             ? 'Low Stock'
                             : 'In Stock'}
                     </span>
@@ -502,7 +502,7 @@ function Product() {
               <div className="text-gray-600 text-sm mb-2">Supplier: {product.supplier_name || '-'}</div>
               <div className="flex items-center gap-2 mb-2">
                 <span className={`px-2 py-1 rounded-full text-xs ${
-                  product.current_stock < 40 ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-800'
+                  product.current_stock < 20 ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-800'
                 }`}>
                   {product.current_stock != null && !isNaN(Number(product.current_stock))
                     ? `${product.current_stock} units`
@@ -513,7 +513,7 @@ function Product() {
                     ? 'bg-gray-100 text-gray-700'
                     : product.current_stock <= 0
                       ? 'bg-red-100 text-red-700'
-                      : product.current_stock <= 40
+                      : product.current_stock <= 20
                         ? 'bg-yellow-100 text-yellow-700'
                         : 'bg-green-100 text-green-700'
                 }`}>
@@ -521,7 +521,7 @@ function Product() {
                     ? 'Out of Stock'
                     : product.current_stock <= 0
                       ? 'Out-Stock'
-                      : product.current_stock <= 40
+                      : product.current_stock <= 20
                         ? 'Low Stock'
                         : 'In Stock'}
                 </span>

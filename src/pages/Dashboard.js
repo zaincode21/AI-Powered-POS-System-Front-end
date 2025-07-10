@@ -1,6 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Label, Text
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip
 } from 'recharts';
 import { getSalesStats, getDailySales, getRecentSales, getSales } from '../services/saleService';
 import { getInventoryData } from '../services/productService';
@@ -12,6 +18,8 @@ function Dashboard() {
   const [salesData, setSalesData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [customerPerDayData, setCustomerPerDayData] = useState([]);
+  const [customerPerSaleData, setCustomerPerSaleData] = useState([]);
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -35,12 +43,6 @@ function Dashboard() {
           { label: "Best Seller", value: statsData.bestSeller, icon: "🏆" }
         ]);
         setInventory(inventoryData);
-        setRecentActivity(recentSales.map(sale => {
-          const productNames = Array.isArray(sale.items)
-            ? sale.items.map(item => item.product_name).filter(Boolean).join(', ')
-            : '';
-          return `${productNames} - $${sale.total_amount}`;
-        }));
         // Aggregate sales by product
         const productSales = {};
         allSales.forEach(sale => {
@@ -54,6 +56,33 @@ function Dashboard() {
         });
         const salesDataByProduct = Object.entries(productSales).map(([name, sales]) => ({ name, sales }));
         setSalesData(salesDataByProduct);
+
+        // --- Customer per day chart data ---
+        const customerDayMap = {};
+        allSales.forEach(sale => {
+          const date = sale.created_at ? new Date(sale.created_at).toLocaleDateString() : 'Unknown';
+          const name = sale.customer_name || sale.customer?.full_name || '';
+          if (!customerDayMap[date]) customerDayMap[date] = { date, uniqueCustomers: new Set(), anonymous: 0 };
+          if (name) {
+            customerDayMap[date].uniqueCustomers.add(name);
+          } else {
+            customerDayMap[date].anonymous += 1;
+          }
+        });
+        setCustomerPerDayData(Object.values(customerDayMap).map(d => ({
+          date: d.date,
+          uniqueCustomers: d.uniqueCustomers.size,
+          anonymous: d.anonymous
+        })));
+        // --- Customer per sale chart data ---
+        setCustomerPerSaleData(allSales.map((sale, idx) => {
+          const name = sale.customer_name || sale.customer?.full_name || '';
+          return {
+            sale: idx + 1,
+            hasName: !!name,
+            label: name || 'Anonymous',
+          };
+        }));
 
       } catch (err) {
         console.error('Error fetching dashboard data:', err);
@@ -143,7 +172,21 @@ function Dashboard() {
                     <td className="py-2 px-2 sm:px-3 whitespace-nowrap">{item.quantity}</td>
                     <td className="py-2 px-2 sm:px-3 whitespace-nowrap">${item.price}</td>
                     <td className="py-2 px-2 sm:px-3 whitespace-nowrap">
-                      <span className={`px-2 py-1 rounded text-xs font-semibold ${item.status === 'In Stock' ? 'bg-green-100 text-green-700' : item.status === 'Low Stock' ? 'bg-yellow-100 text-yellow-700' : 'bg-pink-100 text-pink-700'}`}>{item.status}</span>
+                      {(() => {
+                        const stock = Number(item.quantity);
+                        let status = 'In Stock';
+                        let color = 'bg-green-100 text-green-700';
+                        if (stock <= 0) {
+                          status = 'Out-Stock';
+                          color = 'bg-pink-100 text-pink-700';
+                        } else if (stock <= 20) {
+                          status = 'Low Stock';
+                          color = 'bg-yellow-100 text-yellow-700';
+                        }
+                        return (
+                          <span className={`px-2 py-1 rounded text-xs font-semibold ${color}`}>{status}</span>
+                        );
+                      })()}
                     </td>
                   </tr>
                 ))}
@@ -152,95 +195,34 @@ function Dashboard() {
           </div>
         </div>
 
-        {/* Recent Activity */}
+        {/* Recent Activity replaced with Customer Growth Charts */}
         <div className="bg-white rounded-xl shadow p-3 sm:p-6 flex flex-col w-full mt-4 lg:mt-0">
-          <h2 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">Recent Activity</h2>
-          <ul className="list-disc list-inside text-gray-700 space-y-1 sm:space-y-2 text-xs sm:text-sm">
-            {recentActivity.map((activity, idx) => (
-              <li key={idx}>{activity}</li>
-            ))}
-          </ul>
-        </div>
-      </div>
-
-      {/* Advanced Analytics & Insights */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-4 sm:mb-6 w-full">
-        {/* Product Sales Bar Chart */}
-        <div className="bg-white rounded-xl shadow p-3 sm:p-6 flex flex-col items-center md:col-span-2 w-full col-span-1 md:col-span-2">
-          <div className="flex items-center gap-2 mb-1">
-            <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-purple-100 text-purple-700 text-xl">📊</span>
-            <div>
-              <h3 className="font-semibold text-base sm:text-lg leading-tight">Product Sales Overview</h3>
-              <p className="text-xs text-gray-500">Top selling products (by quantity sold)</p>
-            </div>
-          </div>
-          <div className="w-full h-64 sm:h-56 min-w-0">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart
-                data={salesData}
-                margin={{ top: 24, right: 24, left: 8, bottom: 32 }}
-                barCategoryGap={"20%"}
-              >
+          <h2 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">Customer Growth & Activity</h2>
+          <div className="mb-6">
+            <h3 className="text-sm font-bold mb-2">Unique Customers Per Day</h3>
+            <ResponsiveContainer width="100%" height={180}>
+              <BarChart data={customerPerDayData} margin={{ top: 16, right: 24, left: 8, bottom: 24 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
-                <XAxis
-                  dataKey="name"
-                  tick={{ fontSize: 12, fill: '#6b7280' }}
-                  axisLine={false}
-                  tickLine={false}
-                  interval={0}
-                  angle={-20}
-                  height={60}
-                >
-                  <Label value="Product" offset={-10} position="insideBottom" style={{ fill: '#6b7280', fontSize: 13 }} />
-                </XAxis>
-                <YAxis
-                  tick={{ fontSize: 12, fill: '#6b7280' }}
-                  axisLine={false}
-                  tickLine={false}
-                  width={40}
-                >
-                  <Label value="Units Sold" angle={-90} position="insideLeft" style={{ fill: '#6b7280', fontSize: 13 }} />
-                </YAxis>
-                <Tooltip
-                  contentStyle={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 8, fontSize: 13 }}
-                  labelStyle={{ color: '#7c3aed', fontWeight: 600 }}
-                  cursor={{ fill: '#ede9fe' }}
-                  formatter={(value, name) => [value, 'Units Sold']}
-                />
-                <Bar
-                  dataKey="sales"
-                  fill="#7c3aed"
-                  radius={[8, 8, 0, 0]}
-                  maxBarSize={36}
-                  label={{
-                    position: 'top',
-                    fill: '#7c3aed',
-                    fontWeight: 700,
-                    fontSize: 13,
-                    formatter: (v) => v > 0 ? v : ''
-                  }}
-                />
+                <XAxis dataKey="date" tick={{ fontSize: 11, fill: '#6b7280' }} angle={-20} height={50} />
+                <YAxis tick={{ fontSize: 11, fill: '#6b7280' }} allowDecimals={false} />
+                <Tooltip formatter={(value, name) => [value, name === 'uniqueCustomers' ? 'Named Customers' : 'Anonymous']} />
+                <Bar dataKey="uniqueCustomers" fill="#7c3aed" name="Named Customers" />
+                <Bar dataKey="anonymous" fill="#fbbf24" name="Anonymous" />
               </BarChart>
             </ResponsiveContainer>
           </div>
-        </div>
-      </div>
-
-      {/* Business Intelligence Panel */}
-      <div className="bg-white rounded-xl shadow p-3 sm:p-6 mb-4 sm:mb-6 w-full">
-        <h2 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">Business Intelligence</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 w-full">
-          <div className="bg-purple-50 rounded-lg p-3 sm:p-4 flex flex-col items-center w-full">
-            <span className="text-lg sm:text-2xl font-bold text-purple-700 mb-1 sm:mb-2">${stats[0]?.value?.replace('$', '') || '0'}</span>
-            <span className="text-gray-600 text-xs sm:text-base">Today's Sales</span>
-          </div>
-          <div className="bg-blue-50 rounded-lg p-3 sm:p-4 flex flex-col items-center w-full">
-            <span className="text-lg sm:text-2xl font-bold text-blue-700 mb-1 sm:mb-2">{stats[4]?.value || 'N/A'}</span>
-            <span className="text-gray-600 text-xs sm:text-base">Best Seller</span>
-          </div>
-          <div className="bg-green-50 rounded-lg p-3 sm:p-4 flex flex-col items-center w-full">
-            <span className="text-lg sm:text-2xl font-bold text-green-700 mb-1 sm:mb-2">{stats[1]?.value || 0}</span>
-            <span className="text-gray-600 text-xs sm:text-base">Total Customers</span>
+          <div>
+            <h3 className="text-sm font-bold mb-2">Sales by Customer (Anonymous Highlighted)</h3>
+            <ResponsiveContainer width="100%" height={120}>
+              <BarChart data={customerPerSaleData} margin={{ top: 8, right: 24, left: 8, bottom: 24 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
+                <XAxis dataKey="sale" tick={{ fontSize: 11, fill: '#6b7280' }} />
+                <YAxis tick={{ fontSize: 11, fill: '#6b7280' }} allowDecimals={false} hide />
+                <Tooltip formatter={(_, __, props) => props.payload.label} labelFormatter={sale => `Sale #${sale}`} />
+                <Bar dataKey="hasName" fill="#7c3aed" name="Named Customer" isAnimationActive={false} />
+                <Bar dataKey={d => d.hasName ? 0 : 1} fill="#fbbf24" name="Anonymous" isAnimationActive={false} />
+              </BarChart>
+            </ResponsiveContainer>
           </div>
         </div>
       </div>
