@@ -280,8 +280,8 @@ function Product() {
                 printWindow.document.close();
                 printWindow.focus();
                 setTimeout(() => {
-                  printWindow.print();
-                  printWindow.close();
+                printWindow.print();
+                printWindow.close();
                 }, 400);
               }}
               className="flex-1 py-2 bg-gray-100 text-gray-700 rounded text-sm hover:bg-gray-200"

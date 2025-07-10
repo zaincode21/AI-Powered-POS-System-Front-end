@@ -885,19 +885,111 @@ const POSSystem = () => {
       {/* Receipt Modal */}
       {showReceipt && currentTransaction && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-2 sm:p-6 max-w-full sm:max-w-md w-full mx-2 sm:mx-4 max-h-[90vh] overflow-y-auto shadow-xl border print:shadow-none print:border-none print:max-w-full print:rounded-none">
-            <div ref={el => (window.receiptPrintArea = el)} className="print-area">
-              {/* Store Header */}
+          {/* Print-specific styles for 57mm x 40mm receipt paper */}
+          <style>{`
+            @media print {
+              body, html {
+                background: #fff !important;
+                margin: 0 !important;
+                padding: 0 !important;
+              }
+              .print-area {
+                width: 64mm !important;
+                min-width: 0 !important;
+                max-width: 64mm !important;
+                font-size: 10px !important;
+                margin: 0 auto !important;
+                padding: 0 2mm 0 2mm !important;
+                background: #fff !important;
+                box-shadow: none !important;
+                border: none !important;
+              }
+              .print-area * {
+                font-size: 10px !important;
+                box-shadow: none !important;
+              }
+              .print-area img {
+                max-width: 40mm !important;
+                max-height: 40mm !important;
+              }
+              .print-area th, .print-area td {
+                padding: 2px 2px !important;
+              }
+              .print-area .text-base, .print-area .font-bold {
+                font-size: 11px !important;
+              }
+              .print-area .text-lg, .print-area .text-2xl {
+                font-size: 12px !important;
+              }
+              .print-area .text-xs, .print-area .text-xxs {
+                font-size: 9px !important;
+              }
+              .print-area .border, .print-area .border-b, .print-area .border-t {
+                border-width: 1px !important;
+              }
+              .print-area .rounded, .print-area .rounded-full {
+                border-radius: 0 !important;
+              }
+              .print-area .mb-2, .print-area .mt-2, .print-area .my-2, .print-area .pt-2, .print-area .pb-2 {
+                margin: 2px 0 !important;
+                padding: 2px 0 !important;
+              }
+              .print-area .p-2, .print-area .p-4, .print-area .py-1, .print-area .px-1 {
+                padding: 2px !important;
+              }
+              .print-area .border-t, .print-area .border-b {
+                border-top-width: 1px !important;
+                border-bottom-width: 1px !important;
+              }
+              .print-area .text-center {
+                text-align: center !important;
+              }
+              .print-area .text-right {
+                text-align: right !important;
+              }
+              .print-area .text-left {
+                text-align: left !important;
+              }
+              .print-area .flex, .print-area .justify-between {
+                display: flex !important;
+                justify-content: space-between !important;
+              }
+              .print-area .gap-2 {
+                gap: 2px !important;
+              }
+              .print-area .bg-gray-50, .print-area .bg-white, .print-area .bg-purple-700, .print-area .bg-blue-100, .print-area .bg-yellow-50 {
+                background: #fff !important;
+              }
+              .print-area .text-purple-700, .print-area .text-blue-700, .print-area .text-gray-700, .print-area .text-gray-800, .print-area .text-gray-600, .print-area .text-green-700, .print-area .text-red-600 {
+                color: #000 !important;
+              }
+              .print-area .border-purple-700, .print-area .border-blue-100, .print-area .border-yellow-50, .print-area .border-gray-300, .print-area .border-gray-100 {
+                border-color: #000 !important;
+              }
+              .print-area .shadow, .print-area .shadow-sm, .print-area .shadow-xl {
+                box-shadow: none !important;
+              }
+            }
+          `}</style>
+          <div className="bg-white rounded-lg p-2 sm:p-6 max-w-full sm:max-w-md w-full mx-2 sm:mx-4 max-h-[90vh] overflow-y-auto shadow-xl border print:shadow-none print:border-none print:max-w-full print:rounded-none print:bg-white">
+            <div ref={el => (window.receiptPrintArea = el)} className="print-area font-mono text-xs print:text-xs print:bg-white" style={{ minWidth: 320, maxWidth: 420, margin: '0 auto' }}>
+              {/* Store Header with Logo */}
               <div className="text-center border-b pb-2 mb-2">
-                <div className="text-2xl font-extrabold text-purple-700 tracking-wide">Your Store Name</div>
-                <div className="text-sm text-gray-600">123 Main St, City, State 12345</div>
-                <div className="text-sm text-gray-600">(555) 123-4567</div>
+                <div className="flex items-center justify-center gap-2 mb-1">
+                  <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center text-2xl font-bold text-purple-700 print:bg-white print:border print:border-gray-300">LOGO</div>
+                  <div>
+                    <div className="text-lg font-extrabold text-purple-700 tracking-wide">Your Store Name</div>
+                    <div className="text-xs text-gray-600">123 Main St, City, State 12345</div>
+                    <div className="text-xs text-gray-600">Phone: +1 555-123-4567</div>
+                    <div className="text-xs text-gray-600">VAT: 123456789</div>
+                  </div>
+                </div>
               </div>
-              {/* Receipt Title */}
+              {/* Receipt Title & Info */}
               <div className="text-center mb-2">
-                <div className="text-lg font-bold text-gray-800">SALES RECEIPT</div>
-                <div className="text-xs text-gray-500">Transaction ID: {currentTransaction.id}</div>
-                <div className="text-xs text-gray-500">{currentTransaction.timestamp}</div>
+                <div className="text-base font-bold text-gray-800 tracking-wider">SALES RECEIPT</div>
+                <div className="text-xs text-gray-500">Receipt #: {currentTransaction.id}</div>
+                <div className="text-xs text-gray-500">Date: {new Date(currentTransaction.timestamp).toLocaleDateString()} {new Date(currentTransaction.timestamp).toLocaleTimeString()}</div>
               </div>
               {/* Customer Info */}
               {(currentTransaction.customer.full_name || currentTransaction.customer.phone || currentTransaction.customer.tin || currentTransaction.customer.email) && (
@@ -918,12 +1010,12 @@ const POSSystem = () => {
                 </div>
               )}
               {/* Product Table */}
-              <table className="w-full text-xs mb-2 border-t border-b">
+              <table className="w-full text-xs mb-2 border-t border-b print:border-t print:border-b">
                 <thead>
-                  <tr className="text-left text-gray-500 border-b">
+                  <tr className="text-left text-gray-700 border-b">
                     <th className="py-1 px-1 font-semibold">Product</th>
                     <th className="py-1 px-1 font-semibold text-center">Qty</th>
-                    <th className="py-1 px-1 font-semibold text-right">Price</th>
+                    <th className="py-1 px-1 font-semibold text-right">Unit</th>
                     <th className="py-1 px-1 font-semibold text-right">Total</th>
                   </tr>
                 </thead>
@@ -932,35 +1024,31 @@ const POSSystem = () => {
                     <tr key={item.id} className="border-b last:border-b-0">
                       <td className="py-1 px-1 text-gray-800">{item.name}</td>
                       <td className="py-1 px-1 text-center">{item.quantity}</td>
-                      <td className="py-1 px-1 text-right">${
-                        (typeof item.price === 'number' ? item.price : parseFloat(item.price) || 0).toFixed(2)
-                      }</td>
-                      <td className="py-1 px-1 text-right">${
-                        ((typeof item.price === 'number' ? item.price : parseFloat(item.price) || 0) * item.quantity).toFixed(2)
-                      }</td>
+                      <td className="py-1 px-1 text-right">{(typeof item.price === 'number' ? item.price : parseFloat(item.price) || 0).toLocaleString(undefined, { style: 'currency', currency: 'USD' })}</td>
+                      <td className="py-1 px-1 text-right">{((typeof item.price === 'number' ? item.price : parseFloat(item.price) || 0) * item.quantity).toLocaleString(undefined, { style: 'currency', currency: 'USD' })}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
               {/* Totals Section */}
-              <div className="mb-2">
+              <div className="mb-2 mt-2">
                 <div className="flex justify-between text-xs">
                   <span>Subtotal:</span>
-                  <span>${currentTransaction.subtotal.toFixed(2)}</span>
+                  <span>{currentTransaction.subtotal.toLocaleString(undefined, { style: 'currency', currency: 'USD' })}</span>
                 </div>
                 {currentTransaction.discount > 0 && (
                   <div className="flex justify-between text-xs text-red-600">
                     <span>Discount:</span>
-                    <span>- ${currentTransaction.discount.toFixed(2)}</span>
+                    <span>- {currentTransaction.discount.toLocaleString(undefined, { style: 'currency', currency: 'USD' })}</span>
                   </div>
                 )}
                 <div className="flex justify-between text-xs">
                   <span>Tax:</span>
-                  <span>${currentTransaction.tax.toFixed(2)}</span>
+                  <span>{currentTransaction.tax.toLocaleString(undefined, { style: 'currency', currency: 'USD' })}</span>
                 </div>
                 <div className="flex justify-between text-base font-bold border-t pt-1 mt-1">
                   <span>Total:</span>
-                  <span>${currentTransaction.total.toFixed(2)}</span>
+                  <span>{currentTransaction.total.toLocaleString(undefined, { style: 'currency', currency: 'USD' })}</span>
                 </div>
               </div>
               {/* Payment Info */}
@@ -973,11 +1061,11 @@ const POSSystem = () => {
                   <>
                     <div className="flex justify-between text-xs">
                       <span>Cash Received:</span>
-                      <span>${currentTransaction.cashReceived.toFixed(2)}</span>
+                      <span>{currentTransaction.cashReceived.toLocaleString(undefined, { style: 'currency', currency: 'USD' })}</span>
                     </div>
                     <div className="flex justify-between text-xs font-semibold text-green-700">
                       <span>Change:</span>
-                      <span>${currentTransaction.change.toFixed(2)}</span>
+                      <span>{currentTransaction.change.toLocaleString(undefined, { style: 'currency', currency: 'USD' })}</span>
                     </div>
                   </>
                 )}
@@ -994,8 +1082,8 @@ const POSSystem = () => {
               </div>
               {/* Thank You Message */}
               <div className="text-center mt-2 border-t pt-2">
-                <div className="text-base font-bold text-purple-700">Thank you for your purchase!</div>
-                <div className="text-xs text-gray-500">Please visit again.</div>
+                <div className="text-base font-bold text-purple-700">Thank you for your business!</div>
+                <div className="text-xs text-gray-500">This is your official receipt. Please keep it for your records.</div>
               </div>
             </div>
             {/* Actions */}
