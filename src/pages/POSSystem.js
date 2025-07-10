@@ -452,37 +452,7 @@ const POSSystem = () => {
               )}
             </div>
             {/* Barcode Scanner */}
-            <div className="mb-2 sm:mb-4">
-              <form onSubmit={handleBarcodeSubmit} className="flex flex-col gap-2 sm:flex-row">
-                <div className="relative flex-1">
-                  <Scan className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                  <input
-                    type="text"
-                    placeholder="Scan or enter barcode..."
-                    className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 ${
-                      barcodeError ? 'border-red-500 focus:ring-red-500' : 'focus:ring-green-500'
-                    } text-sm sm:text-base`}
-                    value={barcodeInput}
-                    onChange={(e) => setBarcodeInput(e.target.value)}
-                    onKeyDown={handleBarcodeKeyDown}
-                  />
-                  {barcodeError && (
-                    <div className="absolute top-full left-0 mt-1 text-red-500 text-xs">
-                      {barcodeError}
-                    </div>
-                  )}
-                </div>
-                <button
-                  type="submit"
-                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm sm:text-base"
-                >
-                  Add
-                </button>
-              </form>
-              <div className="text-xs text-gray-500 mt-1">
-                Try: 1234567890123 (Coffee), 1234567890125 (Sandwich), 1234567890131 (Pizza)
-              </div>
-            </div>
+            {/* Removed barcode input form as requested */}
           </div>
           {/* Products Grid */}
           <div className="p-2 sm:p-4 overflow-y-auto flex-1" style={{ minHeight: 0 }}>
