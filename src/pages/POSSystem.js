@@ -982,8 +982,8 @@ const POSSystem = () => {
                     <div className="text-xs text-gray-600">123 Main St, City, State 12345</div>
                     <div className="text-xs text-gray-600">Phone: +1 555-123-4567</div>
                     <div className="text-xs text-gray-600">VAT: 123456789</div>
-                  </div>
-                </div>
+              </div>
+            </div>
               </div>
               {/* Receipt Title & Info */}
               <div className="text-center mb-2">
@@ -1020,7 +1020,7 @@ const POSSystem = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {currentTransaction.items.map(item => (
+              {currentTransaction.items.map(item => (
                     <tr key={item.id} className="border-b last:border-b-0">
                       <td className="py-1 px-1 text-gray-800">{item.name}</td>
                       <td className="py-1 px-1 text-center">{item.quantity}</td>
@@ -1033,43 +1033,43 @@ const POSSystem = () => {
               {/* Totals Section */}
               <div className="mb-2 mt-2">
                 <div className="flex justify-between text-xs">
-                  <span>Subtotal:</span>
+                <span>Subtotal:</span>
                   <span>{currentTransaction.subtotal.toLocaleString(undefined, { style: 'currency', currency: 'USD' })}</span>
-                </div>
-                {currentTransaction.discount > 0 && (
+              </div>
+              {currentTransaction.discount > 0 && (
                   <div className="flex justify-between text-xs text-red-600">
-                    <span>Discount:</span>
+                  <span>Discount:</span>
                     <span>- {currentTransaction.discount.toLocaleString(undefined, { style: 'currency', currency: 'USD' })}</span>
-                  </div>
-                )}
+                </div>
+              )}
                 <div className="flex justify-between text-xs">
-                  <span>Tax:</span>
+                <span>Tax:</span>
                   <span>{currentTransaction.tax.toLocaleString(undefined, { style: 'currency', currency: 'USD' })}</span>
-                </div>
+              </div>
                 <div className="flex justify-between text-base font-bold border-t pt-1 mt-1">
-                  <span>Total:</span>
+                <span>Total:</span>
                   <span>{currentTransaction.total.toLocaleString(undefined, { style: 'currency', currency: 'USD' })}</span>
-                </div>
+              </div>
               </div>
               {/* Payment Info */}
               <div className="mb-2">
                 <div className="flex justify-between text-xs">
                   <span>Payment Method:</span>
-                  <span>{currentTransaction.paymentMethod === 'card' ? 'Card' : 'Cash'}</span>
-                </div>
-                {currentTransaction.paymentMethod === 'cash' && (
-                  <>
-                    <div className="flex justify-between text-xs">
-                      <span>Cash Received:</span>
-                      <span>{currentTransaction.cashReceived.toLocaleString(undefined, { style: 'currency', currency: 'USD' })}</span>
-                    </div>
-                    <div className="flex justify-between text-xs font-semibold text-green-700">
-                      <span>Change:</span>
-                      <span>{currentTransaction.change.toLocaleString(undefined, { style: 'currency', currency: 'USD' })}</span>
-                    </div>
-                  </>
-                )}
+                <span>{currentTransaction.paymentMethod === 'card' ? 'Card' : 'Cash'}</span>
               </div>
+              {currentTransaction.paymentMethod === 'cash' && (
+                <>
+                    <div className="flex justify-between text-xs">
+                    <span>Cash Received:</span>
+                      <span>{currentTransaction.cashReceived.toLocaleString(undefined, { style: 'currency', currency: 'USD' })}</span>
+                  </div>
+                    <div className="flex justify-between text-xs font-semibold text-green-700">
+                    <span>Change:</span>
+                      <span>{currentTransaction.change.toLocaleString(undefined, { style: 'currency', currency: 'USD' })}</span>
+                  </div>
+                </>
+              )}
+            </div>
               {/* QR Code Section */}
               <div className="text-center my-2">
                 <img 
@@ -1088,12 +1088,12 @@ const POSSystem = () => {
             </div>
             {/* Actions */}
             <div className="mt-3 flex gap-2 print:hidden">
-              <button
-                onClick={closeReceipt}
+            <button
+              onClick={closeReceipt}
                 className="flex-1 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
-              >
-                New Transaction
-              </button>
+            >
+              New Transaction
+            </button>
               <button
                 onClick={() => window.print()}
                 className="flex-1 py-2 bg-gray-100 text-gray-700 rounded text-sm hover:bg-gray-200"
