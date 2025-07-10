@@ -1,28 +1,19 @@
 /* ReportsPrint.css */
 @media print {
-  .no-print, .no-print *, .sidebar, .sidebar-overlay {
+  /* Repeat table headers and footers on each printed page */
+  thead { display: table-header-group !important; }
+  tfoot { display: table-footer-group !important; }
+  /* Hide all direct children of .reports-main except .print-table-section */
+  .reports-main > *:not(.print-table-section) {
     display: none !important;
   }
-  .print-report-title {
-    display: block !important;
-    font-size: 2.2rem !important;
-    font-weight: bold !important;
-    margin-bottom: 2.5rem !important;
-    text-align: center !important;
-    letter-spacing: 1px;
-    color: #222 !important;
+  /* Show print-table-section and its content */
+  .print-table-section, .print-table-section * {
+    display: revert !important;
+    visibility: visible !important;
   }
-  h2, h1 {
-    page-break-after: avoid;
-    font-size: 1.3rem !important;
-    font-weight: bold !important;
-    margin-top: 2.5rem !important;
-    margin-bottom: 1.2rem !important;
-    color: #222 !important;
-    border-bottom: 2px solid #bbb !important;
-    padding-bottom: 0.3rem !important;
-  }
-  table {
+  /* Table formatting for print */
+  .print-table-section table {
     width: 100% !important;
     border-collapse: collapse !important;
     margin-bottom: 2.5rem !important;
@@ -31,30 +22,37 @@
     box-shadow: 0 2px 8px #0001 !important;
     page-break-inside: avoid !important;
   }
-  th, td {
+  .print-table-section th, .print-table-section td {
     border: 1px solid #333 !important;
     padding: 8px 10px !important;
     text-align: left !important;
     background: #fff !important;
   }
-  thead th {
+  .print-table-section thead th {
     background: #f5f5f5 !important;
     font-weight: bold !important;
     color: #222 !important;
   }
-  tr {
+  .print-table-section tr {
     page-break-inside: avoid !important;
   }
+  .print-table-section h2 {
+    page-break-after: avoid;
+    font-size: 1.3rem !important;
+    font-weight: bold !important;
+    margin-top: 2.5rem !important;
+    margin-bottom: 1.2rem !important;
+    color: #222 !important;
+    border-bottom: 2px solid #bbb !important;
+    padding-bottom: 0.3rem !important;
+    display: block !important;
+  }
+  /* Page background and font */
   body {
     background: #fff !important;
     color: #000 !important;
     margin: 0 !important;
     font-family: 'Segoe UI', Arial, sans-serif !important;
-  }
-  /* Add spacing between sections */
-  .mb-12, .my-8, .mb-4 {
-    margin-bottom: 2.5rem !important;
-    margin-top: 2.5rem !important;
   }
   /* Footer with page numbers */
   @page {
@@ -70,4 +68,5 @@
     font-size: 0.95rem;
     color: #888;
   }
+  /* To add a custom footer or watermark, add it to the print window HTML in the printSection function. */
 } 

@@ -3,10 +3,11 @@ import { ShoppingCart, Search, CreditCard, Trash2, Plus, Minus, Receipt, X, Scan
 import { getProducts } from '../services/productService';
 import { getCategories } from '../services/categoryService';
 import { submitSale } from '../services/saleService';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 const POSSystem = () => {
   const routerLocation = useLocation();
+  const navigate = useNavigate();
   const [products, setProducts] = useState([]);
   const [loadingProducts, setLoadingProducts] = useState(true);
   const [productsError, setProductsError] = useState('');
@@ -377,6 +378,33 @@ const POSSystem = () => {
         .finally(() => setLoadingProducts(false));
     }
   }, [selectedCategory]);
+
+  // --- Add this useEffect to support scanning multiple products ---
+  useEffect(() => {
+    const params = new URLSearchParams(routerLocation.search);
+    const productParam = params.get('product');
+    if (productParam && products.length > 0) {
+      try {
+        const productData = JSON.parse(decodeURIComponent(productParam));
+        // Find the product in the loaded list by id or name
+        let found = null;
+        if (productData.id) {
+          found = products.find(p => String(p.id) === String(productData.id));
+        }
+        if (!found && productData.name) {
+          found = products.find(p => p.name === productData.name);
+        }
+        if (found) {
+          addToCart(found);
+          // Remove ?product= from the URL so it can be scanned again
+          params.delete('product');
+          navigate({ pathname: routerLocation.pathname, search: params.toString() }, { replace: true });
+        }
+      } catch (e) {
+        // ignore parse errors
+      }
+    }
+  }, [routerLocation.search, products]);
 
   return (
     <div className="flex flex-col h-screen bg-gray-100 md:flex-row">

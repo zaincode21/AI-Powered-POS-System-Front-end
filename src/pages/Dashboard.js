@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Label, Text
 } from 'recharts';
-import { getSalesStats, getDailySales, getRecentSales } from '../services/saleService';
+import { getSalesStats, getDailySales, getRecentSales, getSales } from '../services/saleService';
 import { getInventoryData } from '../services/productService';
 
 function Dashboard() {
@@ -19,11 +19,11 @@ function Dashboard() {
         setLoading(true);
         
         // Fetch all dashboard data in parallel
-        const [statsData, inventoryData, dailySales, recentSales] = await Promise.all([
+        const [statsData, inventoryData, recentSales, allSales] = await Promise.all([
           getSalesStats(),
           getInventoryData(),
-          getDailySales(),
           getRecentSales(),
+          getSales(),
         ]);
 
         // Transform statsData object into an array for rendering
@@ -35,8 +35,25 @@ function Dashboard() {
           { label: "Best Seller", value: statsData.bestSeller, icon: "🏆" }
         ]);
         setInventory(inventoryData);
-        setRecentActivity(recentSales.map(sale => `Sale #${sale.sale_number} - $${sale.total_amount}`));
-        setSalesData(dailySales);
+        setRecentActivity(recentSales.map(sale => {
+          const productNames = Array.isArray(sale.items)
+            ? sale.items.map(item => item.product_name).filter(Boolean).join(', ')
+            : '';
+          return `${productNames} - $${sale.total_amount}`;
+        }));
+        // Aggregate sales by product
+        const productSales = {};
+        allSales.forEach(sale => {
+          if (Array.isArray(sale.items)) {
+            sale.items.forEach(item => {
+              if (!item.product_name) return;
+              if (!productSales[item.product_name]) productSales[item.product_name] = 0;
+              productSales[item.product_name] += Number(item.quantity) || 0;
+            });
+          }
+        });
+        const salesDataByProduct = Object.entries(productSales).map(([name, sales]) => ({ name, sales }));
+        setSalesData(salesDataByProduct);
 
       } catch (err) {
         console.error('Error fetching dashboard data:', err);
@@ -81,18 +98,18 @@ function Dashboard() {
   }
 
   return (
-    <div className="flex flex-col flex-1 w-full min-h-screen p-0 sm:p-2 md:p-4 lg:p-6">
+    <div className="flex flex-col flex-1 w-full min-h-screen p-2 sm:p-4 md:p-6 lg:p-8 bg-gray-50">
       {/* Header & Stats */}
-      <div className="bg-white rounded-xl shadow p-4 sm:p-6 mb-4 sm:mb-6 w-full flex-shrink-0">
-        <div className="flex flex-col sm:flex-row items-center justify-between mb-4 sm:mb-6 gap-2 sm:gap-0">
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-800">Advanced POS Dashboard</h1>
-          <button className="p-2 rounded hover:bg-gray-100">
+      <div className="bg-white rounded-xl shadow p-3 sm:p-6 mb-4 sm:mb-6 w-full flex-shrink-0">
+        <div className="flex flex-col md:flex-row items-center justify-between mb-4 sm:mb-6 gap-2 md:gap-0">
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-800 text-center md:text-left w-full md:w-auto">Advanced POS Dashboard</h1>
+          <button className="p-2 rounded hover:bg-gray-100 self-end md:self-auto">
             <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="feather feather-menu"><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="18" x2="21" y2="18" /></svg>
           </button>
-        </div>
-        <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-5 gap-3 sm:gap-4 mb-4 sm:mb-6">
+         </div>
+        <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-5 gap-3 sm:gap-4 mb-4 sm:mb-6 w-full">
           {stats.map((stat) => (
-            <div key={stat.label} className="flex flex-col items-center bg-gray-100 rounded-lg p-3 sm:p-4 w-full">
+            <div key={stat.label} className="flex flex-col items-center bg-gray-100 rounded-lg p-3 sm:p-4 w-full min-w-[120px]">
               <span className="text-2xl sm:text-3xl mb-1 sm:mb-2">{stat.icon}</span>
               <span className="text-lg sm:text-xl font-bold">{stat.value}</span>
               <span className="text-gray-500 text-xs sm:text-sm text-center">{stat.label}</span>
@@ -100,20 +117,19 @@ function Dashboard() {
           ))}
         </div>
         {/* Quick Actions */}
-      
-      </div>
+       </div>
 
-      {/* Main Dashboard Area */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 mb-4 sm:mb-6 flex-1">
+       {/* Main Dashboard Area */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 mb-4 sm:mb-6 flex-1">
         {/* Inventory Table */}
-        <div className="md:col-span-2 bg-white rounded-xl shadow p-4 sm:p-6 overflow-x-auto w-full">
+        <div className="lg:col-span-2 bg-white rounded-xl shadow p-3 sm:p-6 overflow-x-auto w-full">
           <h2 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">Inventory Management</h2>
-          <div className="overflow-x-auto">
-            <table className="min-w-full text-xs sm:text-sm">
+          <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-gray-200 scrollbar-track-gray-50">
+            <table className="min-w-[520px] w-full text-xs sm:text-sm">
               <thead>
                 <tr className="text-left text-gray-500">
                   <th className="py-2 px-2 sm:px-3">Product Name</th>
-                  <th className="py-2 px-2 sm:px-3">Category</th>
+                 
                   <th className="py-2 px-2 sm:px-3">Quantity</th>
                   <th className="py-2 px-2 sm:px-3">Price</th>
                   <th className="py-2 px-2 sm:px-3">Status</th>
@@ -123,7 +139,7 @@ function Dashboard() {
                 {inventory.map((item) => (
                   <tr key={item.name} className="border-t">
                     <td className="py-2 px-2 sm:px-3 font-medium whitespace-nowrap">{item.name}</td>
-                    <td className="py-2 px-2 sm:px-3 whitespace-nowrap">{item.category}</td>
+                   
                     <td className="py-2 px-2 sm:px-3 whitespace-nowrap">{item.quantity}</td>
                     <td className="py-2 px-2 sm:px-3 whitespace-nowrap">${item.price}</td>
                     <td className="py-2 px-2 sm:px-3 whitespace-nowrap">
@@ -137,7 +153,7 @@ function Dashboard() {
         </div>
 
         {/* Recent Activity */}
-        <div className="bg-white rounded-xl shadow p-4 sm:p-6 flex flex-col w-full">
+        <div className="bg-white rounded-xl shadow p-3 sm:p-6 flex flex-col w-full mt-4 lg:mt-0">
           <h2 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">Recent Activity</h2>
           <ul className="list-disc list-inside text-gray-700 space-y-1 sm:space-y-2 text-xs sm:text-sm">
             {recentActivity.map((activity, idx) => (
@@ -148,18 +164,62 @@ function Dashboard() {
       </div>
 
       {/* Advanced Analytics & Insights */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 sm:gap-6 mb-4 sm:mb-6 w-full">
-        {/* Sales Overview Bar Chart */}
-        <div className="bg-white rounded-xl shadow p-4 sm:p-6 flex flex-col items-center md:col-span-2 w-full">
-          <h3 className="font-semibold mb-2 text-sm sm:text-base">Real-Time Sales Overview</h3>
-          <div className="w-full h-48 sm:h-40">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-4 sm:mb-6 w-full">
+        {/* Product Sales Bar Chart */}
+        <div className="bg-white rounded-xl shadow p-3 sm:p-6 flex flex-col items-center md:col-span-2 w-full col-span-1 md:col-span-2">
+          <div className="flex items-center gap-2 mb-1">
+            <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-purple-100 text-purple-700 text-xl">📊</span>
+            <div>
+              <h3 className="font-semibold text-base sm:text-lg leading-tight">Product Sales Overview</h3>
+              <p className="text-xs text-gray-500">Top selling products (by quantity sold)</p>
+            </div>
+          </div>
+          <div className="w-full h-64 sm:h-56 min-w-0">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={salesData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" />
-                <YAxis />
-                <Tooltip />
-                <Bar dataKey="sales" fill="#7c3aed" radius={[4, 4, 0, 0]} />
+              <BarChart
+                data={salesData}
+                margin={{ top: 24, right: 24, left: 8, bottom: 32 }}
+                barCategoryGap={"20%"}
+              >
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
+                <XAxis
+                  dataKey="name"
+                  tick={{ fontSize: 12, fill: '#6b7280' }}
+                  axisLine={false}
+                  tickLine={false}
+                  interval={0}
+                  angle={-20}
+                  height={60}
+                >
+                  <Label value="Product" offset={-10} position="insideBottom" style={{ fill: '#6b7280', fontSize: 13 }} />
+                </XAxis>
+                <YAxis
+                  tick={{ fontSize: 12, fill: '#6b7280' }}
+                  axisLine={false}
+                  tickLine={false}
+                  width={40}
+                >
+                  <Label value="Units Sold" angle={-90} position="insideLeft" style={{ fill: '#6b7280', fontSize: 13 }} />
+                </YAxis>
+                <Tooltip
+                  contentStyle={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 8, fontSize: 13 }}
+                  labelStyle={{ color: '#7c3aed', fontWeight: 600 }}
+                  cursor={{ fill: '#ede9fe' }}
+                  formatter={(value, name) => [value, 'Units Sold']}
+                />
+                <Bar
+                  dataKey="sales"
+                  fill="#7c3aed"
+                  radius={[8, 8, 0, 0]}
+                  maxBarSize={36}
+                  label={{
+                    position: 'top',
+                    fill: '#7c3aed',
+                    fontWeight: 700,
+                    fontSize: 13,
+                    formatter: (v) => v > 0 ? v : ''
+                  }}
+                />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -167,9 +227,9 @@ function Dashboard() {
       </div>
 
       {/* Business Intelligence Panel */}
-      <div className="bg-white rounded-xl shadow p-4 sm:p-6 mb-4 sm:mb-6 w-full">
+      <div className="bg-white rounded-xl shadow p-3 sm:p-6 mb-4 sm:mb-6 w-full">
         <h2 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">Business Intelligence</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 w-full">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 w-full">
           <div className="bg-purple-50 rounded-lg p-3 sm:p-4 flex flex-col items-center w-full">
             <span className="text-lg sm:text-2xl font-bold text-purple-700 mb-1 sm:mb-2">${stats[0]?.value?.replace('$', '') || '0'}</span>
             <span className="text-gray-600 text-xs sm:text-base">Today's Sales</span>

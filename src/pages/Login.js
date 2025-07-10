@@ -24,13 +24,13 @@ function Login() {
       localStorage.setItem('user', JSON.stringify(user));
       setSuccess(true);
       timeoutRef.current = setTimeout(() => {
-        if (user.role === 'cashier') {
-          navigate('/stock-out');
-        } else if (user.role === 'inventory') {
-          navigate('/product');
-        } else {
-          navigate('/');
-        }
+      if (user.role === 'cashier') {
+        navigate('/stock-out');
+      } else if (user.role === 'inventory') {
+        navigate('/product');
+      } else {
+        navigate('/');
+      }
       }, 5240);
       return;
     } catch (err) {
