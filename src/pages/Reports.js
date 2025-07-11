@@ -227,7 +227,7 @@ function Reports() {
     function addFooter() {
       doc.setFontSize(13);
       doc.setTextColor(150, 150, 150);
-      doc.text('POS Management system © Uruti hub', pageWidth / 2, doc.internal.pageSize.getHeight() - 20, { align: 'center' });
+      doc.text('POS Management system © USerge zaincode21', pageWidth / 2, doc.internal.pageSize.getHeight() - 20, { align: 'center' });
     }
     let y = margin;
     // --- Inventory Section Only ---
@@ -343,7 +343,7 @@ function Reports() {
             <div class="report-date">${dateString}</div>
             <div class="report-desc">${description}</div>
             ${table.outerHTML}
-            <div class="print-footer">POS Management system:&copy;Uruti hub</div>
+            <div class="this code is coded by:&copy;Serge zaincode21</div>
           </body>
         </html>
       `);
