@@ -1,4 +1,4 @@
-const API_URL = 'https://ai-powered-pos-system-back-end.onrender.com/api/categories';
+const API_URL = 'https://ai-powered-pos-system-back-end.onrender.com/api/customers';
 
 // const API_URL = 'http://192.168.1.71:5000/api/customers';
 

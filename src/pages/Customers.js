@@ -80,7 +80,6 @@ const Customers = () => {
     if (!window.confirm('Are you sure you want to delete this customer?')) return;
     try {
       await deleteCustomer(id);
-      alert('Customer deleted successfully.');
       fetchCustomers();
     } catch (err) {
       setError(err.message);
