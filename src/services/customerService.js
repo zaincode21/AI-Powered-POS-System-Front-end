@@ -1,6 +1,6 @@
-const API_URL = 'https://ai-powered-pos-system-back-end.onrender.com/api/categories';
+// const API_URL = 'https://ai-powered-pos-system-back-end.onrender.com/api/categories';
 
-// const API_URL = 'http://192.168.1.71:5000/api/customers';
+const API_URL = 'http://192.168.1.71:5000/api/customers';
 
 export const getCustomers = async () => {
   const res = await fetch(API_URL);
@@ -46,6 +46,7 @@ export const updateCustomer = async (id, data) => {
 
 export const deleteCustomer = async (id) => {
   const res = await fetch(`${API_URL}/${id}`, { method: 'DELETE' });
+  console.log("id ",id,"response " ,res)
   if (!res.ok) throw new Error('Failed to delete customer');
   return res.json();
 }; 
