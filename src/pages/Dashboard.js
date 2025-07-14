@@ -36,9 +36,9 @@ function Dashboard() {
 
         // Transform statsData object into an array for rendering
         setStats([
-          { label: "Today's Sales", value: `$${statsData.todaySales}`, icon: "💰" },
+          { label: "Today's Sales", value: `RWF${Math.round(Number(statsData.todaySales)).toLocaleString()}`, icon: "💰" },
           { label: "Total Customers", value: statsData.totalCustomers, icon: "🧑‍🤝‍🧑" },
-          { label: "Inventory Value", value: `$${statsData.inventoryValue}`, icon: "📦" },
+          { label: "Inventory Value", value: `RWF${Math.round(Number(statsData.inventoryValue)).toLocaleString()}`, icon: "📦" },
           { label: "Low Stock Items", value: statsData.lowStockCount, icon: "⚠️" },
           { label: "Best Seller", value: statsData.bestSeller, icon: "🏆" }
         ]);
@@ -170,7 +170,7 @@ function Dashboard() {
                     <td className="py-2 px-2 sm:px-3 font-medium whitespace-nowrap">{item.name}</td>
                    
                     <td className="py-2 px-2 sm:px-3 whitespace-nowrap">{item.quantity}</td>
-                    <td className="py-2 px-2 sm:px-3 whitespace-nowrap">${item.price}</td>
+                    <td className="py-2 px-2 sm:px-3 whitespace-nowrap">RWF{Math.round(Number(item.price)).toLocaleString()}</td>
                     <td className="py-2 px-2 sm:px-3 whitespace-nowrap">
                       {(() => {
                         const stock = Number(item.quantity);

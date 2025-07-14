@@ -411,7 +411,7 @@ function Product() {
                   </td>
                   <td className="py-3 px-3">
                     {product.selling_price != null && !isNaN(Number(product.selling_price))
-                      ? `$${Number(product.selling_price).toFixed(2)}`
+                      ? `RWF ${Math.round(Number(product.selling_price)).toLocaleString()}`
                       : '-'}
                   </td>
                   <td className="py-3 px-3">
@@ -517,7 +517,7 @@ function Product() {
               </div>
               <div className="text-gray-800 font-semibold mb-2">
                 {product.selling_price != null && !isNaN(Number(product.selling_price))
-                  ? `$${Number(product.selling_price).toFixed(2)}`
+                  ? `RWF ${Math.round(Number(product.selling_price)).toLocaleString()}`
                   : '-'}
               </div>
               <div className="flex gap-3 mt-2">
@@ -733,8 +733,8 @@ function Product() {
                   <tbody>
                     {historyData.map((h, idx) => (
                       <tr key={idx} className="border-b">
-                        <td className="py-2 px-3">${Number(h.old_price).toFixed(2)}</td>
-                        <td className="py-2 px-3">${Number(h.new_price).toFixed(2)}</td>
+                        <td className="py-2 px-3">RWF{Math.round(Number(h.old_price)).toLocaleString()}</td>
+                        <td className="py-2 px-3">RWF{Math.round(Number(h.new_price)).toLocaleString()}</td>
                         <td className="py-2 px-3">{h.user_id || '-'}</td>
                         <td className="py-2 px-3">{h.change_reason}</td>
                         <td className="py-2 px-3">{h.created_at ? new Date(h.created_at).toLocaleString() : '-'}</td>

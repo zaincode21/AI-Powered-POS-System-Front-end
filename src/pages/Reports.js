@@ -381,7 +381,7 @@ function Reports() {
           <>
             <div className="flex flex-col items-center bg-white rounded-lg shadow p-4 min-w-[140px]">
               <span className="text-3xl mb-2">💰</span>
-              <span className="text-xl font-bold">${stats.todaySales?.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+              <span className="text-xl font-bold">RWF{Math.round(Number(stats.todaySales)).toLocaleString()}</span>
               <span className="text-gray-500 text-sm text-center">Today's Sales</span>
             </div>
             <div className="flex flex-col items-center bg-white rounded-lg shadow p-4 min-w-[140px]">
@@ -391,7 +391,7 @@ function Reports() {
             </div>
             <div className="flex flex-col items-center bg-white rounded-lg shadow p-4 min-w-[140px]">
               <span className="text-3xl mb-2">📦</span>
-              <span className="text-xl font-bold">${stats.inventoryValue?.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+              <span className="text-xl font-bold">RWF{Math.round(Number(stats.inventoryValue)).toLocaleString()}</span>
               <span className="text-gray-500 text-sm text-center">Inventory Value</span>
             </div>
             <div className="flex flex-col items-center bg-white rounded-lg shadow p-4 min-w-[140px]">
@@ -474,7 +474,7 @@ function Reports() {
                     <td className="border px-3 py-2">{Array.isArray(sale.items) ? sale.items.map(i => i.product_name).join(', ') : '-'}</td>
                     <td className="border px-3 py-2">{Array.isArray(sale.items) ? sale.items.reduce((sum, i) => sum + (i.quantity || 0), 0) : '-'}</td>
                     <td className="border px-3 py-2">{sale.created_at ? new Date(sale.created_at).toLocaleString() : '-'}</td>
-                    <td className="border px-3 py-2">${sale.total_amount?.toFixed ? sale.total_amount.toFixed(2) : sale.total_amount}</td>
+                    <td className="border px-3 py-2">RWF{sale.total_amount?.toFixed ? sale.total_amount.toFixed(2) : sale.total_amount}</td>
                   </tr>
                 ))
               )}
@@ -488,7 +488,7 @@ function Reports() {
                 </td>
                 <td className="border px-3 py-2"></td>
                 <td className="border px-3 py-2">
-                  ${paginatedSales.reduce((sum, sale) => sum + (Number(sale.total_amount) || 0), 0).toFixed(2)}
+                  RWF{paginatedSales.reduce((sum, sale) => sum + (Number(sale.total_amount) || 0), 0).toFixed(2)}
                 </td>
               </tr>
             </tfoot>
@@ -607,7 +607,7 @@ function Reports() {
                       <td className="border px-3 py-2">{product.name}</td>
                       <td className="border px-3 py-2">{product.category_name || product.category || '-'}</td>
                       <td className="border px-3 py-2">{currentStock}</td>
-                      <td className="border px-3 py-2">${product.selling_price || product.price || '-'}</td>
+                      <td className="border px-3 py-2">RWF{Math.round(Number(product.selling_price || product.price || 0)).toLocaleString()}</td>
                       <td className="border px-3 py-2">
                         <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                           stockStatus === 'Out-Stock' ? 'bg-red-100 text-red-800' :
@@ -618,7 +618,7 @@ function Reports() {
                         </span>
                       </td>
                       <td className="border px-3 py-2">{product.supplier_name || '-'}</td>
-                      <td className="border px-3 py-2">${product.cost_price || '-'}</td>
+                      <td className="border px-3 py-2">RWF{Math.round(Number(product.cost_price || 0)).toLocaleString()}</td>
                       <td className="border px-3 py-2">{minStockLevel}</td>
                       <td className="border px-3 py-2">
                         {(() => {
@@ -648,7 +648,7 @@ function Reports() {
                   {paginatedProducts.reduce((sum, p) => sum + (p.current_stock || p.stock || 0), 0)}
                 </td>
                 <td className="border px-3 py-2">
-                  ${paginatedProducts.reduce((sum, p) => sum + ((Number(p.selling_price || p.price || 0)) * (p.current_stock || p.stock || 0)), 0).toFixed(2)}
+                  RWF{Math.round(paginatedProducts.reduce((sum, p) => sum + ((Number(p.selling_price || p.price || 0)) * (p.current_stock || p.stock || 0)), 0)).toLocaleString()}
                 </td>
                 <td className="border px-3 py-2" colSpan={5}></td>
               </tr>

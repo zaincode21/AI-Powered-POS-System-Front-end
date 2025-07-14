@@ -513,7 +513,7 @@ const POSSystem = () => {
                       <div className="text-xs text-purple-700 font-mono mb-1">{product.product_number}</div>
                     )}
                     <h3 className="font-semibold text-gray-800 text-sm sm:text-base mb-1 text-center truncate w-full" title={product.name}>{product.name}</h3>
-                    <p className="text-purple-600 font-bold text-base sm:text-lg mb-0.5">${product.selling_price?.toFixed ? product.selling_price.toFixed(2) : product.selling_price}</p>
+                    <p className="text-purple-600 font-bold text-base sm:text-lg mb-0.5">RWF {Math.round(Number(product.selling_price)).toLocaleString()}</p>
                     <p className="text-xs text-gray-500 mb-0.5">{product.sku || product.id}</p>
                     <p className="text-xs text-gray-400 font-mono">{product.barcode}</p>
                     {/* Stock status indicator */}
@@ -560,7 +560,7 @@ const POSSystem = () => {
                     <h4 className="font-semibold text-sm text-gray-800 truncate" title={item.name}>{item.name}</h4>
                     <p className="text-xs text-gray-500">{item.category_name}</p>
                     <p className="text-xs text-gray-400 font-mono">{item.barcode}</p>
-                    <p className="text-purple-600 font-bold">${(item.price * item.quantity).toFixed(2)}</p>
+                    <p className="text-purple-600 font-bold">RWF {Math.round(item.price * item.quantity).toLocaleString()}</p>
                   </div>
                   <div className="flex items-center gap-2 ml-2">
                     <button
@@ -629,21 +629,21 @@ const POSSystem = () => {
           <div className="space-y-2 pt-2 border-t">
             <div className="flex justify-between text-base font-medium">
               <span>Subtotal:</span>
-              <span>${subtotal.toFixed(2)}</span>
+              <span>RWF {Math.round(subtotal).toLocaleString()}</span>
             </div>
             {discountAmount > 0 && (
               <div className="flex justify-between text-base text-red-600 font-semibold">
                 <span>Discount ({discount.type === 'percentage' ? `${discount.value}%` : `${discount.value}`}):</span>
-                <span>-${discountAmount.toFixed(2)}</span>
+                <span>-RWF {Math.round(discountAmount).toLocaleString()}</span>
               </div>
             )}
             <div className="flex justify-between text-base">
               <span>Tax (8%):</span>
-              <span>${tax.toFixed(2)}</span>
+              <span>RWF {Math.round(tax).toLocaleString()}</span>
             </div>
             <div className="flex justify-between font-extrabold text-xl text-purple-700">
               <span>Total:</span>
-              <span>${total.toFixed(2)}</span>
+              <span>RWF {Math.round(total).toLocaleString()}</span>
             </div>
           </div>
           <button
@@ -652,7 +652,7 @@ const POSSystem = () => {
             className="w-full bg-purple-600 text-white py-3 rounded-xl font-bold text-lg shadow-md hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all disabled:bg-gray-300 disabled:cursor-not-allowed mt-2"
             aria-label="Proceed to checkout"
           >
-            Checkout (${total.toFixed(2)})
+            Checkout (RWF {Math.round(total).toLocaleString()})
           </button>
         </div>
       </div>
@@ -776,7 +776,7 @@ const POSSystem = () => {
               </div>
               {discountAmount > 0 && (
                 <div className="text-sm text-green-600">
-                  Discount applied: -${discountAmount.toFixed(2)}
+                  Discount applied: -RWF {Math.round(discountAmount).toLocaleString()}
                 </div>
               )}
             </div>
@@ -820,17 +820,17 @@ const POSSystem = () => {
                   <div className="mt-2 space-y-1">
                     <div className="flex justify-between text-sm">
                       <span>Cash Received:</span>
-                      <span className="font-medium">${cashReceivedNum.toFixed(2)}</span>
+                      <span className="font-medium">RWF {Math.round(cashReceivedNum).toLocaleString()}</span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span>Total Due:</span>
-                      <span className="font-medium">${total.toFixed(2)}</span>
+                      <span className="font-medium">RWF {Math.round(total).toLocaleString()}</span>
                     </div>
                     <div className={`flex justify-between font-bold ${
                       changeAmount >= 0 ? 'text-green-600' : 'text-red-600'
                     }`}>
                       <span>Change:</span>
-                      <span>${changeAmount.toFixed(2)}</span>
+                      <span>RWF {Math.round(changeAmount).toLocaleString()}</span>
                     </div>
                   </div>
                 )}
@@ -842,21 +842,21 @@ const POSSystem = () => {
               <div className="space-y-1 text-sm">
                 <div className="flex justify-between">
                   <span>Subtotal:</span>
-                  <span>${subtotal.toFixed(2)}</span>
+                  <span>RWF {Math.round(subtotal).toLocaleString()}</span>
                 </div>
                 {discountAmount > 0 && (
                   <div className="flex justify-between text-red-600">
                     <span>Discount:</span>
-                    <span>-${discountAmount.toFixed(2)}</span>
+                    <span>-RWF {Math.round(discountAmount).toLocaleString()}</span>
                   </div>
                 )}
                 <div className="flex justify-between">
                   <span>Tax (8%):</span>
-                  <span>${tax.toFixed(2)}</span>
+                  <span>RWF {Math.round(tax).toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between font-bold text-lg border-t pt-1">
                   <span>Total:</span>
-                  <span>${total.toFixed(2)}</span>
+                  <span>RWF {Math.round(total).toLocaleString()}</span>
                 </div>
               </div>
               {/* QR Code Preview */}
@@ -873,8 +873,8 @@ const POSSystem = () => {
               {processingPayment
                 ? 'Processing...'
                 : paymentMethod === 'cash' && cashReceivedNum < total 
-                  ? `Need ${(total - cashReceivedNum).toFixed(2)} More`
-                  : `Complete Payment - ${total.toFixed(2)}`
+                  ? `Need RWF ${(total - cashReceivedNum).toFixed(2)} More`
+                  : `Complete Payment - RWF ${Math.round(total).toLocaleString()}`
               }
             </button>
           </div>
@@ -1022,8 +1022,8 @@ const POSSystem = () => {
                     <tr key={item.id} className="border-b last:border-b-0">
                       <td className="py-1 px-1 text-gray-800">{item.name}</td>
                       <td className="py-1 px-1 text-center">{item.quantity}</td>
-                      <td className="py-1 px-1 text-right">{(typeof item.price === 'number' ? item.price : parseFloat(item.price) || 0).toLocaleString(undefined, { style: 'currency', currency: 'USD' })}</td>
-                      <td className="py-1 px-1 text-right">{((typeof item.price === 'number' ? item.price : parseFloat(item.price) || 0) * item.quantity).toLocaleString(undefined, { style: 'currency', currency: 'USD' })}</td>
+                      <td className="py-1 px-1 text-right">{Math.round(item.price).toLocaleString(undefined, { maximumFractionDigits: 0 })}</td>
+                      <td className="py-1 px-1 text-right">{Math.round(item.price * item.quantity).toLocaleString(undefined, { maximumFractionDigits: 0 })}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -1032,21 +1032,21 @@ const POSSystem = () => {
               <div className="mb-2 mt-2">
                 <div className="flex justify-between text-xs">
                 <span>Subtotal:</span>
-                  <span>{currentTransaction.subtotal.toLocaleString(undefined, { style: 'currency', currency: 'USD' })}</span>
+                  <span>{Math.round(currentTransaction.subtotal).toLocaleString()}</span>
               </div>
               {currentTransaction.discount > 0 && (
                   <div className="flex justify-between text-xs text-red-600">
                   <span>Discount:</span>
-                    <span>- {currentTransaction.discount.toLocaleString(undefined, { style: 'currency', currency: 'USD' })}</span>
+                    <span>- {Math.round(currentTransaction.discount).toLocaleString()}</span>
                 </div>
               )}
                 <div className="flex justify-between text-xs">
                 <span>Tax:</span>
-                  <span>{currentTransaction.tax.toLocaleString(undefined, { style: 'currency', currency: 'USD' })}</span>
+                  <span>{Math.round(currentTransaction.tax).toLocaleString()}</span>
               </div>
                 <div className="flex justify-between text-base font-bold border-t pt-1 mt-1">
                 <span>Total:</span>
-                  <span>{currentTransaction.total.toLocaleString(undefined, { style: 'currency', currency: 'USD' })}</span>
+                  <span>{Math.round(currentTransaction.total).toLocaleString()}</span>
               </div>
               </div>
               {/* Payment Info */}
@@ -1059,11 +1059,11 @@ const POSSystem = () => {
                 <>
                     <div className="flex justify-between text-xs">
                     <span>Cash Received:</span>
-                      <span>{currentTransaction.cashReceived.toLocaleString(undefined, { style: 'currency', currency: 'USD' })}</span>
+                      <span>{Math.round(currentTransaction.cashReceived).toLocaleString()}</span>
                   </div>
                     <div className="flex justify-between text-xs font-semibold text-green-700">
                     <span>Change:</span>
-                      <span>{currentTransaction.change.toLocaleString(undefined, { style: 'currency', currency: 'USD' })}</span>
+                      <span>{Math.round(currentTransaction.change).toLocaleString()}</span>
                   </div>
                 </>
               )}
