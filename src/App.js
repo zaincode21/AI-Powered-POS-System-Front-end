@@ -12,6 +12,8 @@ import POSSystem from './pages/POSSystem';
 import Customers from './pages/Customers';
 import Sales from './pages/Sales';
 import Reports from './pages/Reports';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 function App() {
   // Get user from localStorage
@@ -22,57 +24,60 @@ function App() {
   const role = user?.role;
 
   return (
-    <Router>
-      <Routes>
-        <Route path="/login" element={<Login />} />
-        <Route
-          path="/*"
-          element={
-            <PrivateRoute>
-              <MainLayout>
-                <Routes>
-                  {role === 'cashier' ? (
-                    <Route path="/stock-out" element={<POSSystem />} />
-                  ) : role === 'manager' ? (
-                    <>
-                      <Route path="/" element={<Dashboard />} />
-                      <Route path="/categories" element={<Categories />} />
-                      <Route path="/product" element={<Product />} />
-                      <Route path="/customers" element={<Customers />} />
-                      <Route path="/suppliers" element={<Suppliers />} />
-                      <Route path="/store" element={<Store />} />
+    <>
+      <ToastContainer position="top-right" autoClose={2000} />
+      <Router>
+        <Routes>
+          <Route path="/login" element={<Login />} />
+          <Route
+            path="/*"
+            element={
+              <PrivateRoute>
+                <MainLayout>
+                  <Routes>
+                    {role === 'cashier' ? (
                       <Route path="/stock-out" element={<POSSystem />} />
-                      <Route path="/sales" element={<Sales />} />
-                      <Route path="/reports" element={<Reports />} />
-                    </>
-                  ) : role === 'inventory' ? (
-                    <>
-                      <Route path="/categories" element={<Categories />} />
-                      <Route path="/product" element={<Product />} />
-                      <Route path="/suppliers" element={<Suppliers />} />
-                      <Route path="/store" element={<Store />} />
-                    </>
-                  ) : (
-                    <>
-                      <Route path="/" element={<Dashboard />} />
-                      <Route path="/categories" element={<Categories />} />
-                      <Route path="/product" element={<Product />} />
-                      <Route path="/customers" element={<Customers />} />
-                      <Route path="/suppliers" element={<Suppliers />} />
-                      <Route path="/user" element={<User />} />
-                      <Route path="/store" element={<Store />} />
-                      <Route path="/stock-out" element={<POSSystem />} />
-                      <Route path="/sales" element={<Sales />} />
-                      <Route path="/reports" element={<Reports />} />
-                    </>
-                  )}
-                </Routes>
-              </MainLayout>
-            </PrivateRoute>
-          }
-        />
-      </Routes>
-    </Router>
+                    ) : role === 'manager' ? (
+                      <>
+                        <Route path="/" element={<Dashboard />} />
+                        <Route path="/categories" element={<Categories />} />
+                        <Route path="/product" element={<Product />} />
+                        <Route path="/customers" element={<Customers />} />
+                        <Route path="/suppliers" element={<Suppliers />} />
+                        <Route path="/store" element={<Store />} />
+                        <Route path="/stock-out" element={<POSSystem />} />
+                        <Route path="/sales" element={<Sales />} />
+                        <Route path="/reports" element={<Reports />} />
+                      </>
+                    ) : role === 'inventory' ? (
+                      <>
+                        <Route path="/categories" element={<Categories />} />
+                        <Route path="/product" element={<Product />} />
+                        <Route path="/suppliers" element={<Suppliers />} />
+                        <Route path="/store" element={<Store />} />
+                      </>
+                    ) : (
+                      <>
+                        <Route path="/" element={<Dashboard />} />
+                        <Route path="/categories" element={<Categories />} />
+                        <Route path="/product" element={<Product />} />
+                        <Route path="/customers" element={<Customers />} />
+                        <Route path="/suppliers" element={<Suppliers />} />
+                        <Route path="/user" element={<User />} />
+                        <Route path="/store" element={<Store />} />
+                        <Route path="/stock-out" element={<POSSystem />} />
+                        <Route path="/sales" element={<Sales />} />
+                        <Route path="/reports" element={<Reports />} />
+                      </>
+                    )}
+                  </Routes>
+                </MainLayout>
+              </PrivateRoute>
+            }
+          />
+        </Routes>
+      </Router>
+    </>
   );
 }
 

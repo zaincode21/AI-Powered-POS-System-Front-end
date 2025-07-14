@@ -6,6 +6,7 @@ import {
   deleteCustomer
 } from '../services/customerService';
 import { Pencil, Trash2, LayoutGrid, List } from 'lucide-react';
+import { toast } from 'react-toastify';
 
 const Customers = () => {
   const [customers, setCustomers] = useState([]);
@@ -80,9 +81,11 @@ const Customers = () => {
     if (!window.confirm('Are you sure you want to delete this customer?')) return;
     try {
       await deleteCustomer(id);
+      toast.success('Customer deleted successfully!');
       fetchCustomers();
     } catch (err) {
       setError(err.message);
+      toast.error('Failed to delete customer.');
     }
   };
 

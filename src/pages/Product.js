@@ -8,7 +8,7 @@ import {
 } from '../services/productService';
 import { getCategories } from '../services/categoryService';
 import { getSuppliers } from '../services/supplierService';
-import { QRCodeCanvas } from 'qrcode.react';
+import Barcode from 'react-barcode';
 
 function Product() {
   const [products, setProducts] = useState([]);
@@ -35,8 +35,7 @@ function Product() {
   const [error, setError] = useState(null);
 
   const [lastCreatedProduct, setLastCreatedProduct] = useState(null);
-  const [showQrModal, setShowQrModal] = useState(false);
-  const qrPrintRef = useRef();
+  const [showBarcodeModal, setShowBarcodeModal] = useState(false);
   const closeBtnRef = useRef();
   const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [historyData, setHistoryData] = useState([]);
@@ -59,15 +58,15 @@ function Product() {
   }, [message]);
 
   useEffect(() => {
-    if (showQrModal && closeBtnRef.current) {
+    if (showBarcodeModal && closeBtnRef.current) {
       closeBtnRef.current.focus();
       const handleEsc = (e) => {
-        if (e.key === 'Escape') setShowQrModal(false);
+        if (e.key === 'Escape') setShowBarcodeModal(false);
       };
       window.addEventListener('keydown', handleEsc);
       return () => window.removeEventListener('keydown', handleEsc);
     }
-  }, [showQrModal]);
+  }, [showBarcodeModal]);
 
   async function fetchProducts(categoryId = 'All') {
     setLoading(true);
@@ -134,7 +133,7 @@ function Product() {
           setMessage('Product added successfully!');
           setMessageType('success');
           setLastCreatedProduct(created);
-          setShowQrModal(true);
+          setShowBarcodeModal(true);
         }
       } catch (err) {
         let msg = 'Failed to add product';
@@ -231,73 +230,58 @@ function Product() {
     setFormData({ name: '', category_id: '', description: '', cost_price: '', selling_price: '', current_stock: '', status: 'In Stock', is_active: true, supplier_id: '', change_reason: '' });
   };
 
-  const renderQrModal = () => {
-    if (!showQrModal || !lastCreatedProduct) return null;
-    const productParam = encodeURIComponent(JSON.stringify({
-      id: lastCreatedProduct.id,
-      name: lastCreatedProduct.name,
-      selling_price: lastCreatedProduct.selling_price,
-      cost_price: lastCreatedProduct.cost_price
-    }));
-    const qrValue = `${window.location.origin}/stock-out?product=${productParam}`;
+  const renderBarcodeModal = () => {
+    if (!showBarcodeModal || !lastCreatedProduct) return null;
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
         <div className="bg-white rounded-lg p-2 sm:p-6 max-w-full sm:max-w-md w-full mx-2 sm:mx-4 max-h-[90vh] overflow-y-auto shadow-2xl border">
           <div className="w-full flex flex-col items-center p-4">
-            <h3 className="text-lg font-semibold mb-2 text-center">Product QR Code</h3>
+            <h3 className="text-lg font-semibold mb-2 text-center">Product Barcode</h3>
             {lastCreatedProduct?.product_number && (
               <div className="text-xs text-purple-700 font-mono mb-1">{lastCreatedProduct.product_number}</div>
             )}
             <div className="text-base font-bold text-gray-800 mb-2">{lastCreatedProduct?.name}</div>
-            {/* Only QR code will be printed */}
-            <div ref={qrPrintRef} className="print-area">
-              <QRCodeCanvas value={qrValue} size={180} className="mb-4 border rounded shadow" />
+            <div className="print-area">
+              <Barcode value={lastCreatedProduct.product_number || ''} width={2} height={80} fontSize={16} displayValue={true} />
             </div>
           </div>
           <div className="flex gap-2 mt-4 w-full justify-center">
             <button
               ref={closeBtnRef}
-              onClick={() => setShowQrModal(false)}
+              onClick={() => setShowBarcodeModal(false)}
               className="flex-1 py-2 bg-gray-100 text-gray-700 rounded text-sm hover:bg-gray-200"
             >
               Close
             </button>
             <button
               onClick={() => {
-                // Find the canvas inside qrPrintRef
-                const canvas = qrPrintRef.current.querySelector('canvas');
-                if (!canvas) {
-                  alert('QR code not found!');
+                // Print the barcode
+                const printArea = document.querySelector('.print-area');
+                if (!printArea) {
+                  alert('Barcode not found!');
                   return;
                 }
-                const dataUrl = canvas.toDataURL('image/png');
                 const printWindow = window.open('', '', 'height=500,width=400');
-                printWindow.document.write('<html><head><title>Print QR Code</title>');
-                printWindow.document.write('<style>@media print { body { margin: 0; background: #fff; display: flex; align-items: center; justify-content: center; height: 100vh; } img { display: block; margin: auto; } }</style>');
+                printWindow.document.write('<html><head><title>Print Barcode</title>');
+                printWindow.document.write('<style>@media print { body { margin: 0; background: #fff; display: flex; align-items: center; justify-content: center; height: 100vh; } .print-area { display: flex; flex-direction: column; align-items: center; } }</style>');
                 printWindow.document.write('</head><body>');
-                printWindow.document.write('<img src="' + dataUrl + '" style="width:180px;height:180px;"/>');
+                printWindow.document.write(printArea.innerHTML);
                 printWindow.document.write('</body></html>');
                 printWindow.document.close();
                 printWindow.focus();
                 setTimeout(() => {
-                printWindow.print();
-                printWindow.close();
+                  printWindow.print();
+                  printWindow.close();
                 }, 400);
               }}
               className="flex-1 py-2 bg-gray-100 text-gray-700 rounded text-sm hover:bg-gray-200"
             >
-              🖨️ Print QR
+              🖨️ Print Barcode
             </button>
           </div>
         </div>
       </div>
     );
-  };
-
-  // Add this function to show QR modal for any product
-  const handleShowQr = (product) => {
-    setLastCreatedProduct(product);
-    setShowQrModal(true);
   };
 
   const handleShowHistory = async (product) => {
@@ -349,7 +333,7 @@ function Product() {
 
   return (
     <div className="flex flex-col w-full min-h-screen space-y-4 sm:space-y-6">
-      {renderQrModal()}
+      {renderBarcodeModal()}
       {/* Feedback Message */}
       {message && (
         <div className={`mb-4 p-3 rounded ${messageType === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
@@ -465,17 +449,22 @@ function Product() {
                       >
                         🗑️
                       </button>
-                      {/* QR Code Action Button */}
+                      {/* Barcode Action Button */}
                       <button
-                        onClick={() => handleShowQr(product)}
-                        className="text-purple-600 hover:text-purple-800 p-1"
-                        title="Show QR Code"
+                        onClick={() => {
+                          setLastCreatedProduct(product);
+                          setShowBarcodeModal(true);
+                        }}
+                        className="text-gray-700 hover:text-black p-1"
+                        title="Show Barcode"
                       >
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <rect x="3" y="3" width="7" height="7" rx="1.5" stroke="currentColor" strokeWidth="2"/>
-                          <rect x="14" y="3" width="7" height="7" rx="1.5" stroke="currentColor" strokeWidth="2"/>
-                          <rect x="14" y="14" width="7" height="7" rx="1.5" stroke="currentColor" strokeWidth="2"/>
-                          <path d="M7 17h.01M17 7h.01M10 10h4v4h-4z" stroke="currentColor" strokeWidth="2"/>
+                          <rect x="2" y="4" width="2" height="16" fill="currentColor"/>
+                          <rect x="6" y="4" width="1" height="16" fill="currentColor"/>
+                          <rect x="9" y="4" width="2" height="16" fill="currentColor"/>
+                          <rect x="13" y="4" width="1" height="16" fill="currentColor"/>
+                          <rect x="16" y="4" width="2" height="16" fill="currentColor"/>
+                          <rect x="20" y="4" width="1" height="16" fill="currentColor"/>
                         </svg>
                       </button>
                       <button
@@ -544,18 +533,30 @@ function Product() {
                 >
                   🗑️ Delete
                 </button>
-                {/* QR Code Action Button */}
+                {/* Barcode Action Button (mobile) */}
                 <button
-                  onClick={() => handleShowQr(product)}
-                  className="flex-1 bg-purple-100 text-purple-700 py-1 rounded-lg font-medium text-xs hover:bg-purple-200 transition"
+                  onClick={() => {
+                    setLastCreatedProduct(product);
+                    setShowBarcodeModal(true);
+                  }}
+                  className="flex-1 bg-gray-100 text-gray-700 py-1 rounded-lg font-medium text-xs hover:bg-gray-200 transition flex items-center justify-center"
+                  title="Show Barcode"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" className="inline h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <rect x="3" y="3" width="7" height="7" rx="1.5" stroke="currentColor" strokeWidth="2"/>
-                    <rect x="14" y="3" width="7" height="7" rx="1.5" stroke="currentColor" strokeWidth="2"/>
-                    <rect x="14" y="14" width="7" height="7" rx="1.5" stroke="currentColor" strokeWidth="2"/>
-                    <path d="M7 17h.01M17 7h.01M10 10h4v4h-4z" stroke="currentColor" strokeWidth="2"/>
+                    <rect x="2" y="4" width="2" height="16" fill="currentColor"/>
+                    <rect x="6" y="4" width="1" height="16" fill="currentColor"/>
+                    <rect x="9" y="4" width="2" height="16" fill="currentColor"/>
+                    <rect x="13" y="4" width="1" height="16" fill="currentColor"/>
+                    <rect x="16" y="4" width="2" height="16" fill="currentColor"/>
+                    <rect x="20" y="4" width="1" height="16" fill="currentColor"/>
                   </svg>
-                  QR
+                  Barcode
+                </button>
+                <button
+                  onClick={() => handleShowHistory(product)}
+                  className="flex-1 bg-yellow-100 text-yellow-700 py-1 rounded-lg font-medium text-xs hover:bg-yellow-200 transition"
+                >
+                  🕑 History
                 </button>
               </div>
             </div>
