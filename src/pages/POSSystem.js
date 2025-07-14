@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ShoppingCart, Search, CreditCard, Trash2, Plus, Minus, Receipt, X, Scan } from 'lucide-react';
+import { ShoppingCart, Search, CreditCard, Trash2, Plus, Minus, X } from 'lucide-react';
 import { getProducts } from '../services/productService';
 import { getCategories } from '../services/categoryService';
 import { submitSale } from '../services/saleService';
@@ -19,7 +19,6 @@ const POSSystem = () => {
   const [customerInfo, setCustomerInfo] = useState({ full_name: '', email: '', phone: '', tin: '' });
   const [currentTransaction, setCurrentTransaction] = useState(null);
   const [barcodeInput, setBarcodeInput] = useState('');
-  const [barcodeError, setBarcodeError] = useState('');
   const [discount, setDiscount] = useState({ type: 'percentage', value: 0 });
   const [cashReceived, setCashReceived] = useState('');
   const [showCheckout, setShowCheckout] = useState(false);
@@ -114,16 +113,8 @@ const POSSystem = () => {
     if (product) {
       addToCart(product);
       setBarcodeInput('');
-      setBarcodeError('');
     } else {
-      setBarcodeError('Product not found');
-      setTimeout(() => setBarcodeError(''), 3000);
-    }
-  };
-
-  const handleBarcodeKeyDown = (e) => {
-    if (e.key === 'Enter') {
-      handleBarcodeSubmit(e);
+      alert('Product not found');
     }
   };
 
@@ -358,7 +349,7 @@ const POSSystem = () => {
     }, 30000); // Refresh every 30 seconds
     
     return () => clearInterval(refreshInterval);
-  }, [selectedCategory]);
+  }, [selectedCategory, navigate, routerLocation.pathname]);
 
   // Check for low stock items
   useEffect(() => {
@@ -404,7 +395,7 @@ const POSSystem = () => {
         // ignore parse errors
       }
     }
-  }, [routerLocation.search, products]);
+  }, [routerLocation.search, products, navigate, routerLocation.pathname]);
 
   return (
     <div className="flex flex-col h-screen bg-gray-100 md:flex-row">
@@ -513,10 +504,6 @@ const POSSystem = () => {
                       <div className="text-xs text-purple-700 font-mono mb-1">{product.product_number}</div>
                     )}
                     <h3 className="font-semibold text-gray-800 text-sm sm:text-base mb-1 text-center truncate w-full" title={product.name}>{product.name}</h3>
-                    <p className="text-purple-600 font-bold text-base sm:text-lg mb-0.5">RWF {Math.round(Number(product.selling_price)).toLocaleString()}</p>
-                    <p className="text-xs text-gray-500 mb-0.5">{product.sku || product.id}</p>
-                    <p className="text-xs text-gray-400 font-mono">{product.barcode}</p>
-                    {/* Stock status indicator */}
                     <div className={`mt-1 px-2 py-1 rounded-full text-xs font-medium ${
                       product.current_stock <= 0 
                         ? 'bg-red-200 text-red-700' 
@@ -524,12 +511,11 @@ const POSSystem = () => {
                           ? 'bg-yellow-200 text-yellow-700'
                           : 'bg-green-200 text-green-700'
                     }`}>
-                      {product.current_stock <= 0 
-                        ? 'Out of Stock' 
+                      {product.current_stock <= 0
+                        ? 'Out of Stock'
                         : product.current_stock <= (product.min_stock_level || 5)
                           ? `Low Stock (${product.current_stock})`
-                          : `In Stock (${product.current_stock})`
-                      }
+                          : `In Stock (${product.current_stock})`}
                     </div>
                   </div>
                 ))

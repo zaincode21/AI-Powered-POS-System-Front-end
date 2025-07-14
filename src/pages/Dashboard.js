@@ -8,14 +8,12 @@ import {
   CartesianGrid,
   Tooltip
 } from 'recharts';
-import { getSalesStats, getDailySales, getRecentSales, getSales } from '../services/saleService';
+import { getSalesStats, getSales } from '../services/saleService';
 import { getInventoryData } from '../services/productService';
 
 function Dashboard() {
   const [stats, setStats] = useState([]);
   const [inventory, setInventory] = useState([]);
-  const [recentActivity, setRecentActivity] = useState([]);
-  const [salesData, setSalesData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [customerPerDayData, setCustomerPerDayData] = useState([]);
@@ -27,10 +25,9 @@ function Dashboard() {
         setLoading(true);
         
         // Fetch all dashboard data in parallel
-        const [statsData, inventoryData, recentSales, allSales] = await Promise.all([
+        const [statsData, inventoryData, allSales] = await Promise.all([
           getSalesStats(),
           getInventoryData(),
-          getRecentSales(),
           getSales(),
         ]);
 
@@ -55,7 +52,7 @@ function Dashboard() {
           }
         });
         const salesDataByProduct = Object.entries(productSales).map(([name, sales]) => ({ name, sales }));
-        setSalesData(salesDataByProduct);
+        // setSalesData(salesDataByProduct); // This line was removed as per the edit hint
 
         // --- Customer per day chart data ---
         const customerDayMap = {};

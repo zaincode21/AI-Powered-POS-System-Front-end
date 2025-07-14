@@ -23,7 +23,6 @@ function Reports() {
   const [suppliersLoading, setSuppliersLoading] = useState(true);
   const [suppliersError, setSuppliersError] = useState(null);
 
-  const [customers, setCustomers] = useState([]);
   const [priceHistory, setPriceHistory] = useState({});
   const [priceHistoryLoading, setPriceHistoryLoading] = useState({});
   const [stats, setStats] = useState(null);
@@ -105,7 +104,9 @@ function Reports() {
     
     // Fetch customers
     getCustomers()
-      .then(data => setCustomers(data))
+      .then(data => {
+        // setCustomers(data); // Removed
+      })
       .catch(err => {
         console.error('Failed to fetch customers:', err);
         // setCustomersError(err.message || 'Failed to fetch customers'); // Removed

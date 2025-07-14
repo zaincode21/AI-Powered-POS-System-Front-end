@@ -16,7 +16,7 @@ function Store() {
     phone: '',
     email: '',
     tax_rate: '',
-    currency: 'USD',
+    currency: 'RWF',
     timezone: 'UTC',
   });
   const [message, setMessage] = useState('');
@@ -34,7 +34,7 @@ function Store() {
 
   // List of common ISO 4217 currency codes
   const currencies = [
-    'USD', 'EUR', 'GBP', 'JPY', 'CNY', 'INR', 'AUD', 'CAD', 'CHF', 'ZAR',
+    'RWF', 'USD', 'EUR', 'GBP', 'JPY', 'CNY', 'INR', 'AUD', 'CAD', 'CHF', 'ZAR',
     'BRL', 'RUB', 'SGD', 'HKD', 'KRW', 'NZD', 'MXN', 'SEK', 'NOK', 'TRY',
     'AED', 'SAR', 'EGP', 'NGN', 'KES', 'TZS', 'UGX'
   ];
@@ -77,7 +77,7 @@ function Store() {
       setMessage('Store added successfully!');
       setMessageType('success');
       setShowAddModal(false);
-      setFormData({ name: '', address: '', phone: '', email: '', tax_rate: '', currency: 'USD', timezone: 'UTC' });
+      setFormData({ name: '', address: '', phone: '', email: '', tax_rate: '', currency: 'RWF', timezone: 'UTC' });
       fetchStores();
     } catch (err) {
       setMessage('Failed to add store');
@@ -99,7 +99,7 @@ function Store() {
       setMessage('Store updated successfully!');
       setMessageType('success');
       setEditingStore(null);
-      setFormData({ name: '', address: '', phone: '', email: '', tax_rate: '', currency: 'USD', timezone: 'UTC' });
+      setFormData({ name: '', address: '', phone: '', email: '', tax_rate: '', currency: 'RWF', timezone: 'UTC' });
       fetchStores();
     } catch (err) {
       setMessage('Failed to update store');
@@ -142,7 +142,7 @@ function Store() {
   const closeModal = () => {
     setShowAddModal(false);
     setEditingStore(null);
-    setFormData({ name: '', address: '', phone: '', email: '', tax_rate: '', currency: 'USD', timezone: 'UTC' });
+    setFormData({ name: '', address: '', phone: '', email: '', tax_rate: '', currency: 'RWF', timezone: 'UTC' });
   };
 
   if (loading) {
