@@ -417,6 +417,27 @@ function Reports() {
           <strong>Tip:</strong> For best results, enable <em>Print Background Colors and Images</em> in your browser’s print dialog.
         </span>
       </div>
+      {/* Date Range Filter for Sales */}
+      <div className="flex flex-col sm:flex-row gap-2 mb-4">
+        <div>
+          <label className="block text-xs font-medium text-gray-700 mb-1">Start Date</label>
+          <input
+            type="date"
+            value={salesStartDate}
+            onChange={e => setSalesStartDate(e.target.value)}
+            className="px-2 py-1 border rounded text-sm"
+          />
+        </div>
+        <div>
+          <label className="block text-xs font-medium text-gray-700 mb-1">End Date</label>
+          <input
+            type="date"
+            value={salesEndDate}
+            onChange={e => setSalesEndDate(e.target.value)}
+            className="px-2 py-1 border rounded text-sm"
+          />
+        </div>
+      </div>
       <div className="mb-12 print-table-section" id="sales-table-section">
         <h2 className="text-2xl font-bold mb-4 text-purple-700">Sales</h2>
         <div className="bg-white shadow rounded-xl p-4 overflow-x-auto border border-gray-100">

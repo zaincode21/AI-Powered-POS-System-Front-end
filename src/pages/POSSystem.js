@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { ShoppingCart, Search, CreditCard, Trash2, Plus, Minus, X } from 'lucide-react';
 import { getProducts } from '../services/productService';
 import { getCategories } from '../services/categoryService';
@@ -46,7 +46,7 @@ const POSSystem = () => {
     return matchesSearch && matchesCategory;
   });
 
-  const addToCart = (product) => {
+  const addToCart = useCallback((product) => {
     if (product.current_stock <= 0) {
       setOutOfStockError('Product you select is out of stock');
       setTimeout(() => setOutOfStockError(''), 3000);
@@ -74,7 +74,7 @@ const POSSystem = () => {
         quantity: 1 
       }];
     });
-  };
+  }, []);
 
   const updateQuantity = (id, change) => {
     setCart(prevCart => {
@@ -109,12 +109,37 @@ const POSSystem = () => {
     e.preventDefault();
     if (!barcodeInput.trim()) return;
 
-    const product = products.find(p => p.barcode === barcodeInput.trim());
+    const searchValue = barcodeInput.trim();
+    
+    // Update search bar with scanned barcode
+    setSearchTerm(searchValue);
+    
+    // Search by barcode first, then by product_number if no barcode match
+    let product = products.find(p => p.barcode === searchValue);
+    if (!product) {
+      product = products.find(p => p.product_number === searchValue);
+    }
+    
     if (product) {
+      if (product.current_stock <= 0) {
+        alert(`${product.name} is out of stock`);
+        setBarcodeInput('');
+        return;
+      }
       addToCart(product);
       setBarcodeInput('');
+      // Show success feedback
+      setOutOfStockError(`✅ ${product.name} added to cart`);
+      setTimeout(() => {
+        setOutOfStockError('');
+        // Clear search bar after successful scan
+        setSearchTerm('');
+      }, 2000);
     } else {
-      alert('Product not found');
+      alert(`Product with barcode/code "${searchValue}" not found`);
+      setBarcodeInput('');
+      // Keep the search term to help user see what was scanned
+      setTimeout(() => setSearchTerm(''), 3000);
     }
   };
 
@@ -148,6 +173,28 @@ const POSSystem = () => {
   const sendSaleToBackend = async (transaction) => {
     if (!userId) {
       alert('User ID is missing. Please log in again.');
+      return null;
+    }
+    
+    // Validate user session by checking if user still exists
+    try {
+      const userValidation = await fetch(`http://192.168.1.72:5000/api/users/${userId}`, {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      
+      if (!userValidation.ok) {
+        alert('Your session has expired or user no longer exists. Please log in again.');
+        // Clear localStorage and redirect to login
+        localStorage.removeItem('user');
+        localStorage.removeItem('user_id');
+        localStorage.removeItem('store_id');
+        navigate('/login');
+        return null;
+      }
+    } catch (error) {
+      console.error('User validation failed:', error);
+      alert('Unable to validate user session. Please check your connection and try again.');
       return null;
     }
     
@@ -359,6 +406,87 @@ const POSSystem = () => {
     setStockAlerts(lowStockItems);
   }, [products]);
 
+  // Handle barcode scanner device input
+  useEffect(() => {
+    let barcodeBuffer = '';
+    let barcodeTimeout;
+
+    const handleKeyPress = (e) => {
+      // Handle Enter key from barcode scanner
+      if (e.key === 'Enter' && barcodeBuffer.length > 0) {
+        e.preventDefault();
+        setBarcodeInput(barcodeBuffer);
+        // Simulate form submission
+        setTimeout(() => {
+          const searchValue = barcodeBuffer.trim();
+          
+          // Update search bar with scanned barcode
+          setSearchTerm(searchValue);
+          
+          let product = products.find(p => p.barcode === searchValue);
+          if (!product) {
+            product = products.find(p => p.product_number === searchValue);
+          }
+          
+          if (product) {
+            if (product.current_stock <= 0) {
+              alert(`${product.name} is out of stock`);
+              setBarcodeInput('');
+              return;
+            }
+            addToCart(product);
+            setBarcodeInput('');
+            setOutOfStockError(`✅ ${product.name} added to cart`);
+            setTimeout(() => {
+              setOutOfStockError('');
+              // Clear search bar after successful scan
+              setSearchTerm('');
+            }, 2000);
+          } else {
+            alert(`Product with barcode/code "${searchValue}" not found`);
+            setBarcodeInput('');
+            // Keep the search term to help user see what was scanned
+            setTimeout(() => setSearchTerm(''), 3000);
+          }
+        }, 100);
+        barcodeBuffer = '';
+        return;
+      }
+
+      // Accumulate characters for barcode scanner
+      if (e.key.length === 1) { // Only single characters
+        barcodeBuffer += e.key;
+        
+        // Clear buffer after 500ms of inactivity (scanner usually sends data quickly)
+        clearTimeout(barcodeTimeout);
+        barcodeTimeout = setTimeout(() => {
+          barcodeBuffer = '';
+        }, 500);
+      }
+    };
+
+    // Only listen for keyboard events when not in an input field
+    const handleGlobalKeyPress = (e) => {
+      const activeElement = document.activeElement;
+      const isInputField = activeElement && (
+        activeElement.tagName === 'INPUT' || 
+        activeElement.tagName === 'TEXTAREA' || 
+        activeElement.isContentEditable
+      );
+      
+      if (!isInputField) {
+        handleKeyPress(e);
+      }
+    };
+
+    document.addEventListener('keypress', handleGlobalKeyPress);
+    
+    return () => {
+      document.removeEventListener('keypress', handleGlobalKeyPress);
+      clearTimeout(barcodeTimeout);
+    };
+  }, [products, addToCart]);
+
   // Fetch products when category changes
   useEffect(() => {
     if (selectedCategory) {
@@ -406,7 +534,7 @@ const POSSystem = () => {
             <h1 className="text-xl sm:text-2xl font-bold text-gray-800 mb-2 sm:mb-4">Point of Sale</h1>
             {/* Search and Filters */}
             <div className="flex flex-col gap-2 sm:flex-row sm:gap-4 mb-2 sm:mb-4">
-              <div className="relative flex-1">
+              {/* <div className="relative flex-1">
                 <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                 <input
                   type="text"
@@ -415,7 +543,7 @@ const POSSystem = () => {
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
-              </div>
+              </div> */}
               <select
                 className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
                 value={selectedCategory}
@@ -443,7 +571,31 @@ const POSSystem = () => {
               )}
             </div>
             {/* Barcode Scanner */}
-            {/* Removed barcode input form as requested */}
+            <form onSubmit={handleBarcodeSubmit} className="mb-4">
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  placeholder="Scan or type barcode..."
+                  value={barcodeInput}
+                  onChange={(e) => setBarcodeInput(e.target.value)}
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  autoFocus
+                  onKeyDown={(e) => {
+                    // Handle Enter key specifically for manual input
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleBarcodeSubmit(e);
+                    }
+                  }}
+                />
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-colors"
+                >
+                  Add
+                </button>
+              </div>
+            </form>
           </div>
           {/* Products Grid */}
           <div className="p-2 sm:p-4 overflow-y-auto flex-1" style={{ minHeight: 0 }}>
