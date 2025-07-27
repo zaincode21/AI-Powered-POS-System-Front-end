@@ -12,6 +12,8 @@ import POSSystem from './pages/POSSystem';
 import Customers from './pages/Customers';
 import Sales from './pages/Sales';
 import Reports from './pages/Reports';
+import AIDashboard from './pages/AIDashboard';
+import AIRecommendations from './pages/AIRecommendations';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
@@ -48,6 +50,8 @@ function App() {
                         <Route path="/stock-out" element={<POSSystem />} />
                         <Route path="/sales" element={<Sales />} />
                         <Route path="/reports" element={<Reports />} />
+                        <Route path="/ai-dashboard" element={<AIDashboard />} />
+                        <Route path="/ai-recommendations" element={<AIRecommendations />} />
                       </>
                     ) : role === 'inventory' ? (
                       <>
@@ -68,6 +72,8 @@ function App() {
                         <Route path="/stock-out" element={<POSSystem />} />
                         <Route path="/sales" element={<Sales />} />
                         <Route path="/reports" element={<Reports />} />
+                        <Route path="/ai-dashboard" element={<AIDashboard />} />
+                        <Route path="/ai-recommendations" element={<AIRecommendations />} />
                       </>
                     )}
                   </Routes>

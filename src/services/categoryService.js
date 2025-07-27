@@ -1,6 +1,6 @@
 const API_URL = 'https://ai-powered-pos-system-back-end.onrender.com/api/categories';
 
-// const API_URL = 'http://192.168.1.72:5000/api/categories';
+// const API_URL = 'http://192.168.1.71:5000/api/categories';
 
 export async function getCategories() {
   const res = await fetch(API_URL);

@@ -1,7 +1,7 @@
 // Function to submit a sale with customer info and items
 const API_URL = 'https://ai-powered-pos-system-back-end.onrender.com/api/sales';
 
-// const API_URL = 'http://192.168.1.72:5000/api/sales';
+// const API_URL = 'http://192.168.1.71:5000/api/sales';
 
 export const submitSale = async ({ customer, sale, items }) => {
   try {

@@ -12,8 +12,8 @@ const navItems = [
   { label: 'Sales', icon: '➕', path: '/sales' },
   { label: 'Stock Out (Sales)', icon: '➖', path: '/stock-out' },
   { label: 'Reports', icon: '📊', path: '/reports' },
- 
- 
+  { label: 'AI Dashboard', icon: '🧠', path: '/ai-dashboard' },
+  { label: 'AI Recommendations', icon: '🎯', path: '/ai-recommendations' },
 ];
 
 function Sidebar({ open, onClose }) {
@@ -44,7 +44,9 @@ function Sidebar({ open, onClose }) {
         'Stock Out (Sales)',
         'Reports',
         'Add product', // Ensure Product is visible
-        'Sales'        // Ensure Sales is visible
+        'Sales',       // Ensure Sales is visible
+        'AI Dashboard',
+        'AI Recommendations'
       ].includes(item.label)
     ).map(item => {
       if (item.label === 'Settings') {
@@ -78,7 +80,22 @@ function Sidebar({ open, onClose }) {
       return item;
     });
   } else {
-    filteredNavItems = navItems;
+    filteredNavItems = navItems.filter(item =>
+      [
+        'Dashboard',
+        'Add Categories',
+        'Store',
+        'User',
+        'Suppliers',
+        'Add product',
+        'Customers',
+        'Sales',
+        'Stock Out (Sales)',
+        'Reports',
+        'AI Dashboard',
+        'AI Recommendations'
+      ].includes(item.label)
+    );
   }
 
   // Handle click outside for profile dropdown

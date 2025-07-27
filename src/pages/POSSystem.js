@@ -178,7 +178,11 @@ const POSSystem = () => {
     
     // Validate user session by checking if user still exists
     try {
-      const userValidation = await fetch(`http://192.168.1.72:5000/api/users/${userId}`, {
+      // const userValidation = await fetch(`http://192.168.1.71:5000/api/users/${userId}`, 
+        
+        const userValidation = await fetch(`https://ai-powered-pos-system-back-end.onrender.com/api/users/${userId}`, 
+                                          
+        {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' }
       });
